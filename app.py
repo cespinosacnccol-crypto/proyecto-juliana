@@ -1,24 +1,21 @@
-import io, os, sys, tempfile
+import io, os, sys
 from datetime import datetime
 
 import streamlit as st
 import openpyxl
 from openpyxl.utils import get_column_letter
-import pandas as pd
 
-# ── Asegurar que encuentra calificar_pruebas.py ──────────────────────────────
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from calificar_pruebas import (
     norm, sanitizar_sheet, estilo_header, ancho_columnas, colorear_eval,
-    cargar_respuestas, estandarizar_columnas, actualizar_acumulado,
+    cargar_respuestas, estandarizar_columnas, actualizar_acumulado, generar_informe_cliente,
     COLUMNAS_ESTANDAR, MATERIA_NOMBRES, ST_CELL_FONT, ST_CELL_ALIGN, ST_BORDER,
-    ANCHOS_META,
+    DIR_INFORME,
 )
 
-st.set_page_config(page_title="Calificadora Proyecto Juliana", layout="wide")
-st.title("📊 Sistema de Calificación — Proyecto Juliana")
+st.set_page_config(page_title="Proyecto Juliana", layout="wide")
+st.title("Proyecto Juliana — Sistema de Calificación")
 
-# ── Cargar respuestas correctas ──────────────────────────────────────────────
 RUTA_RESPS = os.path.join(os.path.dirname(__file__), "RESPUESTAS CORRECTAS PROYECTO JULIANA.xlsx")
 if not os.path.exists(RUTA_RESPS):
     st.error("No se encuentra el archivo de respuestas correctas en el servidor.")
@@ -27,35 +24,16 @@ if not os.path.exists(RUTA_RESPS):
 resp_correctas = cargar_respuestas()
 from calificar_pruebas import crear_carpetas
 crear_carpetas()
-st.success(f"Respuestas cargadas: {len(resp_correctas)} combinaciones")
-for (g, m), v in sorted(resp_correctas.items()):
-    st.caption(f"Grado {g} / {m.upper()}: {len(v)} preguntas")
 
-# ── Estado de sesión ─────────────────────────────────────────────────────────
-if "acumulado_wb" not in st.session_state:
-    st.session_state.acumulado_wb = None
-if "resultados" not in st.session_state:
-    st.session_state.resultados = []
-if "procesado" not in st.session_state:
-    st.session_state.procesado = False
-
-# ── Subir archivos ───────────────────────────────────────────────────────────
 archivos = st.file_uploader(
     "Selecciona uno o más archivos .xlsx de pruebas",
     type=["xlsx"], accept_multiple_files=True,
 )
 
-if archivos and st.button("🚀 Calificar", type="primary"):
-    st.session_state.resultados = []
-    wb_acum = st.session_state.acumulado_wb
-    if wb_acum is None:
-        wb_acum = openpyxl.Workbook()
-        if "Sheet" in wb_acum.sheetnames:
-            del wb_acum["Sheet"]
-    else:
-        wb_acum = openpyxl.load_workbook(wb_acum)
-
+if archivos and st.button("Calificar", type="primary"):
+    resultados = []
     bar = st.progress(0, "Procesando...")
+
     for idx, archivo in enumerate(archivos):
         bar.progress((idx) / len(archivos), f"{archivo.name}...")
         try:
@@ -65,7 +43,6 @@ if archivos and st.button("🚀 Calificar", type="primary"):
             st.error(f"{archivo.name}: Error al abrir ({e})")
             continue
 
-        # Estandarizar
         wb_std = estandarizar_columnas(ws_in)
         ws = wb_std.active
         headers = [str(c.value) if c.value is not None else "" for c in ws[1]]
@@ -92,7 +69,6 @@ if archivos and st.button("🚀 Calificar", type="primary"):
             if len(row) > e_materia and row[e_materia]:
                 materia_raw = norm(str(row[e_materia]))
 
-            # fallback nombre archivo
             if grado is None or not materia_raw:
                 nb = os.path.splitext(archivo.name)[0].replace(" ", "_")
                 for p in nb.split("_"):
@@ -138,7 +114,7 @@ if archivos and st.button("🚀 Calificar", type="primary"):
 
         total_preg = alumnos[0]["total"]
 
-        # ── Generar workbook calificado en memoria ──
+        # Generar workbook calificado
         wb_out = openpyxl.Workbook()
         ws_out = wb_out.active
         ws_out.title = "Evaluaciones"
@@ -209,76 +185,39 @@ if archivos and st.button("🚀 Calificar", type="primary"):
         wb_out.save(buf)
         buf.seek(0)
 
-        # Acumular
         actualizar_acumulado(alumnos)
+        generar_informe_cliente()
 
-        # Recargar acumulado desde disco (actualizar_acumulado guarda en disco)
-        ruta_acum = os.path.join(os.path.dirname(__file__), "Pruebas acumuladas", "ACUMULADO GENERAL.xlsx")
-        if os.path.exists(ruta_acum):
-            wb_acum = openpyxl.load_workbook(ruta_acum)
-            st.session_state.acumulado_wb = ruta_acum
-
-        # Tabla resumen para mostrar
-        rows = []
-        for al in alumnos:
-            rows.append({
-                "Estudiante": al["estudiante"].upper(),
-                "Grado": al["grado"],
-                "Materia": MATERIA_NOMBRES.get(al["materia"], al["materia"].upper()),
-                "Correctas": al["ok"],
-                "Total": al["total"],
-                "%": f"{al['pct']*100:.1f}%",
-            })
-        st.session_state.resultados.append({
+        resultados.append({
             "archivo": archivo.name,
-            "tabla": rows,
             "descarga": buf,
         })
 
     bar.progress(1.0, "¡Listo!")
-    st.session_state.procesado = True
 
-# ── Mostrar resultados ───────────────────────────────────────────────────────
-if st.session_state.resultados:
     st.divider()
-    st.subheader("📋 Resultados")
+    st.subheader("Descargas")
 
-    for res in st.session_state.resultados:
-        with st.expander(f"**{res['archivo']}**", expanded=True):
-            df = pd.DataFrame(res["tabla"])
-            st.dataframe(df, use_container_width=True, hide_index=True)
+    for res in resultados:
+        nombre_base = res["archivo"].replace(".xlsx", "")
+        col1, col2 = st.columns(2)
+        with col1:
             st.download_button(
-                label="⬇️ Descargar Excel calificado",
+                label=f"⬇️ {nombre_base}_CALIFICADO.xlsx",
                 data=res["descarga"],
-                file_name=res["archivo"].replace(".xlsx", "_CALIFICADO.xlsx"),
+                file_name=f"{nombre_base}_CALIFICADO.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
-
-    # Descargar acumulado
-    ruta_acum = st.session_state.acumulado_wb
-    if ruta_acum and os.path.exists(ruta_acum):
-        with open(ruta_acum, "rb") as f:
-            st.download_button(
-                label="⬇️ Descargar ACUMULADO GENERAL",
-                data=f.read(),
-                file_name="ACUMULADO GENERAL.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            )
-
-    # Generar INFORME CLIENTE
-    if st.button("📁 Generar INFORME CLIENTE"):
-        from calificar_pruebas import generar_informe_cliente, DIR_INFORME
-        generar_informe_cliente()
-        ruta_informe = os.path.join(DIR_INFORME, "ACUMULADO GENERAL.xlsx")
-        if os.path.exists(ruta_informe):
-            with open(ruta_informe, "rb") as f:
-                st.download_button(
-                    label="⬇️ Descargar INFORME CLIENTE",
-                    data=f.read(),
-                    file_name="INFORME CLIENTE - ACUMULADO GENERAL.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                )
-            st.success("INFORME CLIENTE generado")
+        with col2:
+            ruta_informe = os.path.join(DIR_INFORME, "ACUMULADO GENERAL.xlsx")
+            if os.path.exists(ruta_informe):
+                with open(ruta_informe, "rb") as f:
+                    st.download_button(
+                        label=f"📋 Descargar INFORME CLIENTE",
+                        data=f.read(),
+                        file_name="INFORME CLIENTE.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
 
 elif not archivos:
     st.info("Sube archivos .xlsx y presiona **Calificar** para empezar.")
