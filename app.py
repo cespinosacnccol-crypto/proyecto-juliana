@@ -70,6 +70,9 @@ def procesar_datos(df):
     cursos = cursos.merge(compl, on=curso_cols, how="left")
     cursos["completos"] = cursos["completos"].fillna(0).astype(int)
     cursos["incompletos"] = cursos["incompletos"].fillna(0).astype(int)
+    # Grados por colegio
+    grados_por_cole = df.groupby(["NOMBRE SEDE"])["GRADO"].apply(lambda x: sorted(x.unique())).reset_index()
+    grados_por_cole.columns = ["NOMBRE SEDE", "GRADOS"]
     # Resumen por colegio
     colegios = cursos.groupby(["NOMBRE SEDE", "CÓDIGO DANE SEDE"]).agg(
         cursos=("CURSO", "count"),
@@ -77,6 +80,7 @@ def procesar_datos(df):
         completos=("completos", "sum"),
         incompletos=("incompletos", "sum"),
     ).reset_index()
+    colegios = colegios.merge(grados_por_cole, on="NOMBRE SEDE", how="left")
     return {
         "df": df,
         "materias": materias,
@@ -127,8 +131,10 @@ if nivel == "Vista General":
     st.subheader("Avance por colegio")
     tabla_col = COL.copy()
     tabla_col["% Completo"] = ((tabla_col["completos"] / tabla_col["estudiantes"]) * 100).round(1)
-    tabla_col.columns = ["Colegio", "Código DANE", "Cursos", "Estudiantes", "Completos", "Incompletos", "% Completo"]
-    st.dataframe(tabla_col, use_container_width=True, hide_index=True)
+    tabla_col["Grados"] = tabla_col["GRADOS"].apply(lambda g: ", ".join(str(x) for x in g) if isinstance(g, list) else "")
+    show_col = tabla_col[["NOMBRE SEDE", "CÓDIGO DANE SEDE", "Grados", "cursos", "estudiantes", "completos", "incompletos", "% Completo"]]
+    show_col.columns = ["Colegio", "Código DANE", "Grados", "Cursos", "Estudiantes", "Completos", "Incompletos", "% Completo"]
+    st.dataframe(show_col, use_container_width=True, hide_index=True)
 
     st.bar_chart(tabla_col.set_index("Colegio")["Estudiantes"])
 
@@ -156,10 +162,21 @@ elif nivel == "Por Colegio":
     m4.metric("⚠️ Incompletos", int(cursos_col["incompletos"].sum()))
 
     st.divider()
-    st.subheader("Cursos")
-    cc = cursos_col[["CURSO", "GRADO", "estudiantes", "completos", "incompletos"]].copy()
-    cc.columns = ["Curso", "Grado", "Estudiantes", "Completos", "Incompletos"]
-    st.dataframe(cc, use_container_width=True, hide_index=True)
+    st.subheader("Grados y Cursos")
+    grados = sorted(cursos_col["GRADO"].unique())
+    for g in grados:
+        cc = cursos_col[cursos_col["GRADO"] == g]
+        with st.expander(f"**Grado {g}** — {len(cc)} curso(s), {int(cc['estudiantes'].sum())} estudiante(s)", expanded=True):
+            cc_show = cc[["CURSO", "estudiantes", "completos", "incompletos"]].copy()
+            cc_show.columns = ["Curso", "Estudiantes", "Completos", "Incompletos"]
+            st.dataframe(cc_show, use_container_width=True, hide_index=True)
+            # Faltantes de este grado
+            inc_grado = MAT[(MAT["NOMBRE SEDE"] == cole) & (MAT["GRADO"] == g) & (~MAT["COMPLETO"])]
+            if not inc_grado.empty:
+                ig = inc_grado[["NOMBRES ESTUDIANTE", "CURSO", "FALTA"]]
+                ig.columns = ["Estudiante", "Curso", "Materia(s) faltante(s)"]
+                st.error(f"⚠️ {len(ig)} estudiante(s) incompleto(s)")
+                st.dataframe(ig, use_container_width=True, hide_index=True)
 
     inc_col = MAT[(MAT["NOMBRE SEDE"] == cole) & (~MAT["COMPLETO"])]
     if not inc_col.empty:
@@ -182,9 +199,10 @@ elif nivel == "Por Curso":
 
     filtro = DF[(DF["NOMBRE SEDE"] == cole) & (DF["CURSO"] == curso_sel)]
 
-    m1, m2 = st.columns(2)
+    m1, m2, m3 = st.columns(3)
     m1.metric("Grado", grado)
     m2.metric("Estudiantes", filtro["NOMBRES ESTUDIANTE"].nunique())
+    m3.metric("Curso", curso_sel)
 
     for materia in ["MATEMÁTICAS", "LENGUAJE"]:
         sub = filtro[filtro["PRUEBA"] == materia]
