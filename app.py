@@ -1,4 +1,4 @@
-import io, os, sys
+import io, os, sys, re
 import streamlit as st
 import openpyxl
 import pandas as pd
@@ -35,7 +35,9 @@ def leer_acumulado():
             meta = {}
             for mi, col_i in meta_idx:
                 v = row[col_i] if col_i < len(row) and row[col_i] is not None else ""
-                meta[meta_nombres[mi]] = str(v).strip()
+                val = re.sub(r'\s+', ' ', str(v).strip().upper())
+                meta[meta_nombres[mi]] = val
+            meta["_KEY"] = meta["CÓD. EST."] if meta["CÓD. EST."] else meta["NOMBRES ESTUDIANTE"]
             meta["CORRECTAS"] = correctas
             meta["TOTAL"] = total
             meta["%"] = round(correctas / total * 100, 1) if total else 0
@@ -49,9 +51,13 @@ def leer_acumulado():
 def procesar_datos(df):
     if df is None or df.empty:
         return None, None
-    # Agrupar por estudiante para detectar incompletos
-    id_cols = ["NOMBRE SEDE", "CÓDIGO DANE SEDE", "NOMBRES ESTUDIANTE", "CÓD. EST.", "GRADO", "CURSO"]
-    materias = df.groupby(id_cols)["PRUEBA"].apply(set).reset_index()
+    # Agrupar por estudiante usando _KEY (ID con prioridad, nombre como respaldo)
+    id_cols = ["NOMBRE SEDE", "CÓDIGO DANE SEDE", "_KEY", "GRADO", "CURSO"]
+    materias = df.groupby(id_cols).agg(
+        PRUEBA=("PRUEBA", "unique"),
+        NOMBRES_ESTUDIANTE=("NOMBRES ESTUDIANTE", "first"),
+    ).reset_index()
+    materias["PRUEBA"] = materias["PRUEBA"].apply(set)
     materias["FALTA"] = materias["PRUEBA"].apply(
         lambda s: ", ".join(sorted({"MATEMÁTICAS", "LENGUAJE"} - s)) or ""
     )
@@ -59,8 +65,7 @@ def procesar_datos(df):
     # Detalle por curso
     curso_cols = ["NOMBRE SEDE", "CÓDIGO DANE SEDE", "CURSO", "GRADO"]
     cursos = df.groupby(curso_cols).agg(
-        estudiantes=("NOMBRES ESTUDIANTE", "nunique"),
-        completo=("NOMBRES ESTUDIANTE", lambda x: 0),
+        estudiantes=("_KEY", "nunique"),
     ).reset_index()
     # Completitud por curso
     compl = materias.groupby(curso_cols).agg(
@@ -141,7 +146,7 @@ if nivel == "Vista General":
     if total_inc > 0:
         st.divider()
         st.error(f"⚠️ **{total_inc} estudiantes** con pruebas incompletas")
-        inc = MAT[~MAT["COMPLETO"]][["NOMBRE SEDE", "NOMBRES ESTUDIANTE", "CURSO", "GRADO", "FALTA"]]
+        inc = MAT[~MAT["COMPLETO"]][["NOMBRE SEDE", "NOMBRES_ESTUDIANTE", "CURSO", "GRADO", "FALTA"]]
         inc.columns = ["Colegio", "Estudiante", "Curso", "Grado", "Materia(s) faltante(s)"]
         st.dataframe(inc, use_container_width=True, hide_index=True)
 
@@ -173,7 +178,7 @@ elif nivel == "Por Colegio":
             # Faltantes de este grado
             inc_grado = MAT[(MAT["NOMBRE SEDE"] == cole) & (MAT["GRADO"] == g) & (~MAT["COMPLETO"])]
             if not inc_grado.empty:
-                ig = inc_grado[["NOMBRES ESTUDIANTE", "CURSO", "FALTA"]]
+                ig = inc_grado[["NOMBRES_ESTUDIANTE", "CURSO", "FALTA"]]
                 ig.columns = ["Estudiante", "Curso", "Materia(s) faltante(s)"]
                 st.error(f"⚠️ {len(ig)} estudiante(s) incompleto(s)")
                 st.dataframe(ig, use_container_width=True, hide_index=True)
@@ -182,7 +187,7 @@ elif nivel == "Por Colegio":
     if not inc_col.empty:
         st.divider()
         st.error(f"⚠️ Estudiantes con pruebas incompletas en {cole}")
-        ic = inc_col[["NOMBRES ESTUDIANTE", "CURSO", "GRADO", "FALTA"]]
+        ic = inc_col[["NOMBRES_ESTUDIANTE", "CURSO", "GRADO", "FALTA"]]
         ic.columns = ["Estudiante", "Curso", "Grado", "Materia(s) faltante(s)"]
         st.dataframe(ic, use_container_width=True, hide_index=True)
 
@@ -201,7 +206,7 @@ elif nivel == "Por Curso":
 
     m1, m2, m3 = st.columns(3)
     m1.metric("Grado", grado)
-    m2.metric("Estudiantes", filtro["NOMBRES ESTUDIANTE"].nunique())
+    m2.metric("Estudiantes", filtro["_KEY"].nunique())
     m3.metric("Curso", curso_sel)
 
     for materia in ["MATEMÁTICAS", "LENGUAJE"]:
@@ -234,7 +239,7 @@ elif nivel == "Por Curso":
     if not inc_curso.empty:
         st.divider()
         st.error(f"⚠️ Estudiantes con pruebas incompletas")
-        ic = inc_curso[["NOMBRES ESTUDIANTE", "FALTA"]]
+        ic = inc_curso[["NOMBRES_ESTUDIANTE", "FALTA"]]
         ic.columns = ["Estudiante", "Materia(s) faltante(s)"]
         st.dataframe(ic, use_container_width=True, hide_index=True)
 

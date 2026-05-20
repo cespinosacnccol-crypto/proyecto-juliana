@@ -432,10 +432,10 @@ def procesar(ruta, resp_correctas):
             continue
 
         cod_dane   = str(row[e_cod_dane]).strip() if len(row) > e_cod_dane and row[e_cod_dane] else ""
-        nombre_est = str(row[e_estudiante]).strip() if len(row) > e_estudiante and row[e_estudiante] else "SIN NOMBRE"
-        sede       = str(row[e_nom_sede]).strip() if len(row) > e_nom_sede and row[e_nom_sede] else os.path.splitext(nom)[0]
-        cod_est    = str(row[e_id]).strip() if len(row) > e_id and row[e_id] else ""
-        grupo      = str(row[e_grupo]).strip() if len(row) > e_grupo and row[e_grupo] else ""
+        nombre_est = re.sub(r'\s+', ' ', str(row[e_estudiante]).strip().upper()) if len(row) > e_estudiante and row[e_estudiante] else "SIN NOMBRE"
+        sede       = re.sub(r'\s+', ' ', str(row[e_nom_sede]).strip().upper()) if len(row) > e_nom_sede and row[e_nom_sede] else os.path.splitext(nom)[0]
+        cod_est    = re.sub(r'\s+', ' ', str(row[e_id]).strip().upper()) if len(row) > e_id and row[e_id] else ""
+        grupo      = re.sub(r'\s+', ' ', str(row[e_grupo]).strip().upper()) if len(row) > e_grupo and row[e_grupo] else ""
 
         grado = None
         if e_grado is not None and len(row) > e_grado:
