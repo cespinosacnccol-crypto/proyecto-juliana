@@ -681,7 +681,7 @@ def actualizar_acumulado(alumnos):
             ws.cell(fila, 1, al["cod_dane"]).font = ST_CELL_FONT
             ws.cell(fila, 2, al["sede"].upper()).font = ST_CELL_FONT
             ws.cell(fila, 3, al["estudiante"].upper()).font = ST_CELL_FONT
-        ws.cell(fila, 4, al["cod"].upper()).font = ST_CELL_FONT
+            ws.cell(fila, 4, al["cod"].upper()).font = ST_CELL_FONT
             ws.cell(fila, 5, al["grado"]).font = ST_CELL_FONT
             gpo = int(al["grupo"]) if al["grupo"].isdigit() else al["grupo"].upper()
             ws.cell(fila, 6, gpo).font = ST_CELL_FONT
