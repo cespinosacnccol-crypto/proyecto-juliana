@@ -10,7 +10,7 @@ st.set_page_config(page_title="Proyecto Juliana — Informe Cliente", layout="wi
 st.title("Proyecto Juliana")
 st.caption("Informe de resultados — actualizado periódicamente")
 
-RUTA_ACUM = os.path.join(os.path.dirname(__file__), "Pruebas acumuladas", "ACUMULADO GENERAL.xlsx")
+RUTA_ACUM = os.path.join(os.path.dirname(__file__), "INFORME CLIENTE", "ACUMULADO GENERAL.xlsx")
 
 @st.cache_data
 def leer_acumulado():
