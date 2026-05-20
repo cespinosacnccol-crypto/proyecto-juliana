@@ -68,6 +68,8 @@ if archivos and st.button("Calificar", type="primary"):
             materia_raw = ""
             if len(row) > e_materia and row[e_materia]:
                 materia_raw = norm(str(row[e_materia]))
+                if materia_raw == "lectura":
+                    materia_raw = "lenguaje"
 
             if grado is None or not materia_raw:
                 nb = os.path.splitext(archivo.name)[0].replace(" ", "_")
@@ -147,7 +149,7 @@ if archivos and st.button("Calificar", type="primary"):
             ws_out.cell(f, 1, al["cod_dane"]).font = ST_CELL_FONT
             ws_out.cell(f, 2, al["sede"].upper()).font = ST_CELL_FONT
             ws_out.cell(f, 3, al["estudiante"].upper()).font = ST_CELL_FONT
-            ws_out.cell(f, 4, al["cod"]).font = ST_CELL_FONT
+            ws_out.cell(f, 4, al["cod"].upper()).font = ST_CELL_FONT
             ws_out.cell(f, 5, al["grado"]).font = ST_CELL_FONT
             gpo = int(al["grupo"]) if al["grupo"].isdigit() else al["grupo"].upper()
             ws_out.cell(f, 6, gpo).font = ST_CELL_FONT

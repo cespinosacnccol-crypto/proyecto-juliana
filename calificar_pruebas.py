@@ -244,6 +244,7 @@ def detectar_original(headers_raw, ws=None):
     # ID
     i = buscar_exacto(["id", "id estudiante", "cod est", "cód est",
                         "cod. est", "cód. est",
+                        "cod.est", "cod.est.", "codest",
                         "codigo estudiante", "código estudiante",
                         "codigo est", "código est", "codigo",
                         "documento", "identificacion",
@@ -260,7 +261,7 @@ def detectar_original(headers_raw, ws=None):
     if i is not None: marcar("curso", i)
 
     # MATERIA
-    i = buscar_exacto(["prueba", "materia", "asignatura"])
+    i = buscar_exacto(["prueba", "materia", "asignatura", "lectura"])
     if i is not None: marcar("materia", i)
 
     # ── 2. Coincidencias parciales ────────────────────────────────────────
@@ -313,7 +314,7 @@ def detectar_original(headers_raw, ws=None):
 
     # MATERIA
     if "materia" not in idx:
-        i = buscar_parcial(["prueba", "materia", "asignatura"])
+        i = buscar_parcial(["prueba", "materia", "asignatura", "lectura"])
         if i is not None: marcar("materia", i)
 
     # ── 3. Análisis de datos (fallback) ───────────────────────────────────
@@ -444,6 +445,8 @@ def procesar(ruta, resp_correctas):
         materia_raw = ""
         if e_materia is not None and len(row) > e_materia and row[e_materia]:
             materia_raw = norm(str(row[e_materia]))
+            if materia_raw == "lectura":
+                materia_raw = "lenguaje"
 
         # Fallback: extraer grado/materia del nombre del archivo
         if grado is None or not materia_raw:
@@ -549,7 +552,7 @@ def procesar(ruta, resp_correctas):
         ws.cell(fila, 1, al["cod_dane"]).font = ST_CELL_FONT
         ws.cell(fila, 2, al["sede"].upper()).font = ST_CELL_FONT
         ws.cell(fila, 3, al["estudiante"].upper()).font = ST_CELL_FONT
-        ws.cell(fila, 4, al["cod"]).font = ST_CELL_FONT
+        ws.cell(fila, 4, al["cod"].upper()).font = ST_CELL_FONT
         ws.cell(fila, 5, al["grado"]).font = ST_CELL_FONT
         gpo = int(al["grupo"]) if al["grupo"].isdigit() else al["grupo"].upper()
         ws.cell(fila, 6, gpo).font = ST_CELL_FONT
@@ -678,7 +681,7 @@ def actualizar_acumulado(alumnos):
             ws.cell(fila, 1, al["cod_dane"]).font = ST_CELL_FONT
             ws.cell(fila, 2, al["sede"].upper()).font = ST_CELL_FONT
             ws.cell(fila, 3, al["estudiante"].upper()).font = ST_CELL_FONT
-            ws.cell(fila, 4, al["cod"]).font = ST_CELL_FONT
+        ws.cell(fila, 4, al["cod"].upper()).font = ST_CELL_FONT
             ws.cell(fila, 5, al["grado"]).font = ST_CELL_FONT
             gpo = int(al["grupo"]) if al["grupo"].isdigit() else al["grupo"].upper()
             ws.cell(fila, 6, gpo).font = ST_CELL_FONT
