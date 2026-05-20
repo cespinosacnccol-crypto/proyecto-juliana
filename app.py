@@ -202,15 +202,29 @@ if nivel == "Vista General":
     m4.metric("⚠️ Incompletos", total_inc)
 
     st.divider()
-    st.subheader("Avance por colegio")
-    tabla_col = COL.copy()
-    tabla_col["% Completo"] = ((tabla_col["completos"] / tabla_col["estudiantes"]) * 100).round(1)
-    tabla_col["Grados"] = tabla_col["GRADOS"].apply(lambda g: ", ".join(str(x) for x in g) if isinstance(g, list) else "")
-    show_col = tabla_col[["NOMBRE SEDE", "CÓDIGO DANE SEDE", "Grados", "cursos", "estudiantes", "completos", "incompletos", "% Completo"]]
-    show_col.columns = ["Colegio", "Código DANE", "Grados", "Cursos", "Estudiantes", "Completos", "Incompletos", "% Completo"]
-    st.dataframe(show_col, use_container_width=True, hide_index=True)
+    st.subheader("Avance por colegio y grado")
+    for colegio in sorted(COL["NOMBRE SEDE"].unique()):
+        info = COL[COL["NOMBRE SEDE"] == colegio].iloc[0]
+        dane = info["CÓDIGO DANE SEDE"]
+        grados = info["GRADOS"]
+        st.markdown(f"**🏫 {colegio}** — DANE: {dane} — Grados: {', '.join(str(g) for g in grados) if isinstance(grados, list) else grados}")
 
-    st.bar_chart(tabla_col.set_index("Colegio")["Estudiantes"])
+        # Cursos de este colegio agrupados por grado
+        cursos_cole = CURSOS[CURSOS["NOMBRE SEDE"] == colegio]
+        for g in sorted(cursos_cole["GRADO"].unique()):
+            cg = cursos_cole[cursos_cole["GRADO"] == g]
+            total_est = int(cg["estudiantes"].sum())
+            total_com = int(cg["completos"].sum())
+            total_inc = int(cg["incompletos"].sum())
+            pct = round(total_com / total_est * 100, 1) if total_est else 0
+            cols = st.columns([1, 1, 1, 1, 1])
+            cols[0].markdown(f"Grado **{g}**")
+            cols[1].metric("Cursos", len(cg))
+            cols[2].metric("Estudiantes", total_est)
+            cols[3].metric("Completos", total_com)
+            cols[4].markdown(f"✅ {pct}%")
+
+    st.bar_chart(COL.set_index("NOMBRE SEDE")["estudiantes"])
 
     if total_inc > 0:
         st.divider()
