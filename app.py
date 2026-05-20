@@ -20,30 +20,42 @@ def leer_acumulado():
     dfs = []
     for sheet in wb.sheetnames:
         ws = wb[sheet]
-        data = list(ws.iter_rows(values_only=True))
-        if len(data) < 2:
-            continue
-        headers = [str(c) if c else f"COL{i}" for i, c in enumerate(data[0])]
-        rows = [r for r in data[1:] if not all(c is None or str(c).strip() == "" for c in r)]
-        if not rows:
-            continue
-        df = pd.DataFrame(rows, columns=headers)
-        dfs.append(df)
+        headers = [str(c.value) if c.value else f"COL{i}" for i, c in enumerate(ws[1])]
+        eval_cols = [i for i, h in enumerate(headers) if h.endswith("_EVAL")]
+        meta_nombres = ["NOMBRE SEDE", "CÓDIGO DANE SEDE", "NOMBRES ESTUDIANTE",
+                         "CÓD. EST.", "GRADO", "CURSO", "PRUEBA"]
+        meta_idx = [(i, headers.index(c)) for i, c in enumerate(meta_nombres) if c in headers]
+        rows = []
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if all(c is None or str(c).strip() == "" for c in row):
+                continue
+            correctas = sum(1 for i in eval_cols if i < len(row) and str(row[i]).strip().upper() == "CORRECTO")
+            total = len(eval_cols)
+            meta = {}
+            for mi, col_i in meta_idx:
+                v = row[col_i] if col_i < len(row) and row[col_i] is not None else ""
+                meta[meta_nombres[mi]] = str(v).strip()
+            meta["_correctas"] = correctas
+            meta["_total"] = total
+            meta["_porcentaje"] = round(correctas / total * 100, 1) if total else 0
+            rows.append(meta)
+        if rows:
+            dfs.append(pd.DataFrame(rows))
     wb.close()
     return pd.concat(dfs, ignore_index=True) if dfs else None
 
 def build_dashboard(df):
     if df is None or df.empty:
         return None
-    cols = ["NOMBRE SEDE", "CÓDIGO DANE SEDE", "CURSO", "GRADO", "PRUEBA",
-            "NOMBRES ESTUDIANTE", "PORCENTAJE ACIERTO"]
+    cols = ["NOMBRE SEDE", "CÓDIGO DANE SEDE", "CURSO", "GRADO", "PRUEBA", "NOMBRES ESTUDIANTE", "_correctas", "_total"]
     if any(c not in df.columns for c in cols):
         return None
     grupo = df.groupby(["NOMBRE SEDE", "CÓDIGO DANE SEDE", "CURSO", "GRADO", "PRUEBA"], dropna=False)
     resumen = grupo.agg(
         estudiantes=("NOMBRES ESTUDIANTE", "count"),
-        pct_promedio=("PORCENTAJE ACIERTO", lambda x: round(x.astype(float).mean() * 100, 1)),
+        pct_promedio=("_porcentaje", "mean"),
     ).reset_index()
+    resumen["pct_promedio"] = resumen["pct_promedio"].round(1)
     return resumen
 
 df = leer_acumulado()
