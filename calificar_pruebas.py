@@ -623,28 +623,13 @@ def procesar(ruta, resp_correctas):
 #  ACTUALIZAR ACUMULADO GENERAL
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def actualizar_acumulado(alumnos):
-    """Agrega los alumnos al archivo acumulado, con una pestaña
-    por combinación GRADO_MATERIA."""
-    if not alumnos:
-        return
-
-    # Agrupar por grado + materia
+def _append_alumnos_to_wb(wb, alumnos, total_preg):
+    """Agrega alumnos a un workbook acumulado. Retorna el workbook."""
     grupos = {}
     for al in alumnos:
         mat_display = MATERIA_NOMBRES.get(al["materia"], al["materia"].upper())
         key = f"{al['grado']}_{sanitizar_sheet(mat_display)}"
         grupos.setdefault(key, []).append(al)
-
-    total_preg = alumnos[0]["total"]
-
-    # Cargar o crear workbook
-    if os.path.exists(ACUMULADO):
-        wb = openpyxl.load_workbook(ACUMULADO)
-    else:
-        wb = openpyxl.Workbook()
-        if "Sheet" in wb.sheetnames:
-            del wb["Sheet"]
 
     cols_meta = ["CÓDIGO DANE SEDE", "NOMBRE SEDE", "NOMBRES ESTUDIANTE",
                   "CÓD. EST.", "GRADO", "CURSO", "PRUEBA"]
@@ -665,9 +650,6 @@ def actualizar_acumulado(alumnos):
             estilo_header(ws, len(todos_cols))
             ancho_columnas(ws, todos_cols)
             ws.freeze_panes = "A2"
-
-        # Verificar que la hoja tiene los encabezados correctos
-        # (Por si se creó con otro número de preguntas)
 
         col_ini_eval = len(cols_meta) + 2
         col_fin_eval = len(cols_meta) + total_preg * 2
@@ -724,12 +706,34 @@ def actualizar_acumulado(alumnos):
 
         print(f"  + Acumulado [{sheet_name}] +{len(grupo_alumnos)} estudiantes "
               f"(fila {prox_fila - len(grupo_alumnos)} en adelante)")
+    return wb
 
+
+def actualizar_acumulado(alumnos):
+    """Agrega los alumnos al archivo acumulado en disco."""
+    if not alumnos:
+        return
+    total_preg = alumnos[0]["total"]
+    if os.path.exists(ACUMULADO):
+        wb = openpyxl.load_workbook(ACUMULADO)
+    else:
+        wb = openpyxl.Workbook()
+        if "Sheet" in wb.sheetnames:
+            del wb["Sheet"]
+    wb = _append_alumnos_to_wb(wb, alumnos, total_preg)
     try:
         wb.save(ACUMULADO)
         print(f"  + Acumulado guardado: {ACUMULADO}")
     except Exception as e:
         print(f"  [!] ERROR al guardar acumulado: {e}")
+
+
+def actualizar_acumulado_wb(alumnos, wb):
+    """Agrega alumnos a un workbook acumulado en memoria (sin guardar en disco)."""
+    if not alumnos:
+        return wb
+    total_preg = alumnos[0]["total"]
+    return _append_alumnos_to_wb(wb, alumnos, total_preg)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
