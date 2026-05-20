@@ -96,7 +96,7 @@ if archivos and st.button("Calificar", type="primary"):
             for i in range(total):
                 re = resp_est[i] if i < len(resp_est) else ""
                 rc = cdict.get(i + 1, "")
-                okk = (re == rc)
+                okk = (re == rc and re != "")
                 if okk: ok += 1
                 detalles.append({"resp": re, "correcta": rc, "ok": okk})
 
@@ -119,7 +119,7 @@ if archivos and st.button("Calificar", type="primary"):
         ws_out = wb_out.active
         ws_out.title = "Evaluaciones"
         cols_meta = ["CÓDIGO DANE SEDE", "NOMBRE SEDE", "NOMBRES ESTUDIANTE",
-                      "ID", "GRADO", "CURSO", "PRUEBA"]
+                      "CÓD. EST.", "GRADO", "CURSO", "PRUEBA"]
         cols_preg = []
         for q in range(1, total_preg + 1):
             cols_preg.append(f"P{q:02d}")

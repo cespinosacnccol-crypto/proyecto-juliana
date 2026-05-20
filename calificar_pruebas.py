@@ -144,7 +144,7 @@ COLUMNAS_ESTANDAR = [
     ("CÓDIGO DANE SEDE", "cod_dane"),
     ("NOMBRE SEDE",     "nombre_sede"),
     ("NOMBRES ESTUDIANTE", "estudiante"),
-    ("ID",              "id"),
+    ("CÓD. EST.",       "id"),
     ("GRADO",           "grado"),
     ("CURSO",           "curso"),
     ("PRUEBA",          "materia"),
@@ -242,8 +242,11 @@ def detectar_original(headers_raw, ws=None):
     if i is not None: marcar("estudiante", i)
 
     # ID
-    i = buscar_exacto(["id", "id estudiante", "cod est", "codigo estudiante",
-                        "codigo est", "código est", "documento", "identificacion",
+    i = buscar_exacto(["id", "id estudiante", "cod est", "cód est",
+                        "cod. est", "cód. est",
+                        "codigo estudiante", "código estudiante",
+                        "codigo est", "código est", "codigo",
+                        "documento", "identificacion",
                         "identificación", "cedula", "cédula", "nuip",
                         "tarjeta identidad", "numero documento"])
     if i is not None: marcar("id", i)
@@ -409,7 +412,7 @@ def procesar(ruta, resp_correctas):
 
     # Columnas fijas (0-based después de estandarizar):
     # [0]=Código Dane Sede, [1]=Nombre Sede, [2]=Nombres Estudiante,
-    # [3]=ID, [4]=Grado, [5]=Curso, [6]=Prueba, [7..]=respuestas
+    # [3]=Cód. Est., [4]=Grado, [5]=Curso, [6]=Prueba, [7..]=respuestas
     e_cod_dane   = 0
     e_nom_sede   = 1
     e_estudiante = 2
@@ -483,7 +486,7 @@ def procesar(ruta, resp_correctas):
             num_p = i + 1
             r_est = resp_est[i] if i < len(resp_est) else ""
             r_cor = correctas_dict.get(num_p, "")
-            ok = (r_est == r_cor)
+            ok = (r_est == r_cor and r_est != "")
             if ok: num_ok += 1
             detalles.append({"resp": r_est, "correcta": r_cor, "ok": ok})
 
@@ -517,7 +520,7 @@ def procesar(ruta, resp_correctas):
 
     # Construir encabezados
     cols_meta = ["CÓDIGO DANE SEDE", "NOMBRE SEDE", "NOMBRES ESTUDIANTE",
-                  "ID", "GRADO", "CURSO", "PRUEBA"]
+                  "CÓD. EST.", "GRADO", "CURSO", "PRUEBA"]
     cols_preg = []
     for q in range(1, total_preg + 1):
         cols_preg.append(f"P{q:02d}")
@@ -641,7 +644,7 @@ def actualizar_acumulado(alumnos):
             del wb["Sheet"]
 
     cols_meta = ["CÓDIGO DANE SEDE", "NOMBRE SEDE", "NOMBRES ESTUDIANTE",
-                  "ID", "GRADO", "CURSO", "PRUEBA"]
+                  "CÓD. EST.", "GRADO", "CURSO", "PRUEBA"]
     cols_preg = []
     for q in range(1, total_preg + 1):
         cols_preg.append(f"P{q:02d}")
