@@ -51,22 +51,88 @@ def leer_acumulado():
 def procesar_datos(df):
     if df is None or df.empty:
         return None, None
-    # Agrupar por estudiante usando _KEY (ID con prioridad, nombre como respaldo)
-    id_cols = ["NOMBRE SEDE", "CÓDIGO DANE SEDE", "_KEY", "GRADO", "CURSO"]
-    materias = df.groupby(id_cols).agg(
+    # Clave por ID (cuando existe)
+    df["_KEY"] = df["CÓD. EST."] if "CÓD. EST." in df.columns and df["CÓD. EST."].any() else df["NOMBRES ESTUDIANTE"]
+    # Clave por nombre + contexto (fallback cuando ID difiere por error de tipeo)
+    df["_NAMEKEY"] = (df["NOMBRE SEDE"] + "|" + df["CÓDIGO DANE SEDE"] + "|" +
+                      df["NOMBRES ESTUDIANTE"] + "|" + df["GRADO"].astype(str) + "|" + df["CURSO"].astype(str))
+
+    # Paso 1: agrupar por _KEY (ID) para detectar coincidencias exactas
+    id_groups = df.groupby(["_KEY", "NOMBRE SEDE", "CÓDIGO DANE SEDE", "GRADO", "CURSO"]).agg(
         PRUEBA=("PRUEBA", "unique"),
         NOMBRES_ESTUDIANTE=("NOMBRES ESTUDIANTE", "first"),
+        _NAMEKEY=("_NAMEKEY", "first"),
     ).reset_index()
-    materias["PRUEBA"] = materias["PRUEBA"].apply(set)
-    materias["FALTA"] = materias["PRUEBA"].apply(
-        lambda s: ", ".join(sorted({"MATEMÁTICAS", "LENGUAJE"} - s)) or ""
-    )
-    materias["COMPLETO"] = materias["FALTA"] == ""
+    id_groups["PRUEBA"] = id_groups["PRUEBA"].apply(set)
+    id_groups["ORIGEN"] = "ID"
+
+    # Paso 2: agrupar por _NAMEKEY para capturar estudiantes con ID diferente pero mismo nombre/contexto
+    name_groups = df.groupby(["_NAMEKEY"]).agg(
+        PRUEBA=("PRUEBA", "unique"),
+        NOMBRES_ESTUDIANTE=("NOMBRES ESTUDIANTE", "first"),
+        NOMBRE_SEDE=("NOMBRE SEDE", "first"),
+        CÓDIGO_DANE_SEDE=("CÓDIGO DANE SEDE", "first"),
+        GRADO=("GRADO", "first"),
+        CURSO=("CURSO", "first"),
+        _KEY=("_KEY", lambda x: list(set(x))),
+    ).reset_index()
+    name_groups["PRUEBA"] = name_groups["PRUEBA"].apply(set)
+    name_groups["ORIGEN"] = "NOMBRE"
+
+    # Paso 3: fusionar ambos criterios
+    # Para cada grupo por nombre, ver si sus IDs ya están completos por separado
+    # Si no, unir las materias
+    consolidados = {}
+    for _, r in name_groups.iterrows():
+        nk = r["_NAMEKEY"]
+        ids = r["_KEY"]
+        materias_name = r["PRUEBA"]
+        completo_name = materias_name >= {"MATEMÁTICAS", "LENGUAJE"}
+
+        if completo_name:
+            # Ya completo por nombre, revisar si algún ID individual ya lo cubría
+            # Usar la entrada de nombre como consolidada
+            key = f"name_{nk}"
+            consolidados[key] = {
+                "PRUEBA": materias_name,
+                "NOMBRES_ESTUDIANTE": r["NOMBRES_ESTUDIANTE"],
+                "NOMBRE SEDE": r["NOMBRE_SEDE"],
+                "CÓDIGO DANE SEDE": str(r["CÓDIGO_DANE_SEDE"]),
+                "GRADO": r["GRADO"],
+                "CURSO": r["CURSO"],
+                "FALTA": "",
+                "COMPLETO": True,
+                "IDS": ids,
+            }
+        else:
+            materias_total = set()
+            for idv in ids:
+                match = id_groups[id_groups["_KEY"] == idv]
+                if not match.empty:
+                    materias_total |= match.iloc[0]["PRUEBA"]
+            completo_total = materias_total >= {"MATEMÁTICAS", "LENGUAJE"}
+            falta = ", ".join(sorted({"MATEMÁTICAS", "LENGUAJE"} - materias_total))
+            key = f"name_{nk}"
+            consolidados[key] = {
+                "PRUEBA": materias_total,
+                "NOMBRES_ESTUDIANTE": r["NOMBRES_ESTUDIANTE"],
+                "NOMBRE SEDE": r["NOMBRE_SEDE"],
+                "CÓDIGO DANE SEDE": str(r["CÓDIGO_DANE_SEDE"]),
+                "GRADO": r["GRADO"],
+                "CURSO": r["CURSO"],
+                "FALTA": falta,
+                "COMPLETO": completo_total,
+                "IDS": ids,
+            }
+
+    materias = pd.DataFrame.from_dict(consolidados, orient="index").reset_index(drop=True)
+
     # Detalle por curso
     curso_cols = ["NOMBRE SEDE", "CÓDIGO DANE SEDE", "CURSO", "GRADO"]
     cursos = df.groupby(curso_cols).agg(
-        estudiantes=("_KEY", "nunique"),
+        estudiantes=("_NAMEKEY", "nunique"),
     ).reset_index()
+
     # Completitud por curso
     compl = materias.groupby(curso_cols).agg(
         completos=("COMPLETO", "sum"),
@@ -75,9 +141,11 @@ def procesar_datos(df):
     cursos = cursos.merge(compl, on=curso_cols, how="left")
     cursos["completos"] = cursos["completos"].fillna(0).astype(int)
     cursos["incompletos"] = cursos["incompletos"].fillna(0).astype(int)
+
     # Grados por colegio
     grados_por_cole = df.groupby(["NOMBRE SEDE"])["GRADO"].apply(lambda x: sorted(x.unique())).reset_index()
     grados_por_cole.columns = ["NOMBRE SEDE", "GRADOS"]
+
     # Resumen por colegio
     colegios = cursos.groupby(["NOMBRE SEDE", "CÓDIGO DANE SEDE"]).agg(
         cursos=("CURSO", "count"),
@@ -86,6 +154,7 @@ def procesar_datos(df):
         incompletos=("incompletos", "sum"),
     ).reset_index()
     colegios = colegios.merge(grados_por_cole, on="NOMBRE SEDE", how="left")
+
     return {
         "df": df,
         "materias": materias,
