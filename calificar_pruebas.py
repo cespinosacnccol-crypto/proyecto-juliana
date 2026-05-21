@@ -49,7 +49,7 @@ ST_BORDER     = Border(left=ST_THIN, right=ST_THIN, top=ST_THIN, bottom=ST_THIN)
 ST_SUM_FONT   = Font(bold=True, name="Calibri", size=10)
 
 # Anchocolumnas por posición (1-indexed) para metadatos y por nombre para el resto
-ANCHOS_META = {1: 18, 2: 30, 3: 34, 4: 14, 5: 8, 6: 8, 7: 14}
+ANCHOS_META = {1: 10, 2: 18, 3: 30, 4: 34, 5: 14, 6: 8, 7: 8, 8: 14}
 ANCHOS_SUM = {
     "CORRECTAS": 12, "INCORRECTAS": 12, "TOTAL_EVAL": 12, "PORCENTAJE ACIERTO": 18,
 }
@@ -117,6 +117,31 @@ def colorear_eval(cell, valor):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+#  CARGAR MAPEO TRATADO/CONTROL DESDE SEGUIMIENTO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+RUTA_SEGUIMIENTO = os.path.join(BASE, "Seguimiento.xlsx")
+
+def cargar_tipo_mapping():
+    """Retorna dict: cod_dane -> 'TRATADO'/'CONTROL'/'DESCONOCIDO'"""
+    mapping = {}
+    if not os.path.exists(RUTA_SEGUIMIENTO):
+        print("  [!] No se encuentra Seguimiento.xlsx — todos serán DESCONOCIDO")
+        return mapping
+    wb = openpyxl.load_workbook(RUTA_SEGUIMIENTO)
+    ws = wb.active
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        cod = str(row[0]).strip() if row[0] else ""
+        tipo = str(row[3]).strip().upper() if len(row) > 3 and row[3] else ""
+        if cod and tipo:
+            mapping[cod] = tipo
+    wb.close()
+    print(f"  + Mapeo Tratado/Control cargado: {len(mapping)} sedes")
+    return mapping
+
+TIPO_MAPPING = cargar_tipo_mapping()
+
+# ═══════════════════════════════════════════════════════════════════════════════
 #  CARGAR RESPUESTAS CORRECTAS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -141,13 +166,14 @@ def cargar_respuestas():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 COLUMNAS_ESTANDAR = [
-    ("CÓDIGO DANE SEDE", "cod_dane"),
-    ("NOMBRE SEDE",     "nombre_sede"),
+    ("TIPO",              "tipo"),
+    ("CÓDIGO DANE SEDE",  "cod_dane"),
+    ("NOMBRE SEDE",       "nombre_sede"),
     ("NOMBRES ESTUDIANTE", "estudiante"),
-    ("CÓD. EST.",       "id"),
-    ("GRADO",           "grado"),
-    ("CURSO",           "curso"),
-    ("PRUEBA",          "materia"),
+    ("CÓD. EST.",         "id"),
+    ("GRADO",             "grado"),
+    ("CURSO",             "curso"),
+    ("PRUEBA",            "materia"),
 ]
 
 
@@ -412,15 +438,16 @@ def procesar(ruta, resp_correctas):
     n_meta = len(COLUMNAS_ESTANDAR)
 
     # Columnas fijas (0-based después de estandarizar):
-    # [0]=Código Dane Sede, [1]=Nombre Sede, [2]=Nombres Estudiante,
-    # [3]=Cód. Est., [4]=Grado, [5]=Curso, [6]=Prueba, [7..]=respuestas
-    e_cod_dane   = 0
-    e_nom_sede   = 1
-    e_estudiante = 2
-    e_id         = 3
-    e_grado      = 4
-    e_grupo      = 5
-    e_materia    = 6
+    # [0]=TIPO, [1]=Código Dane Sede, [2]=Nombre Sede, [3]=Nombres Estudiante,
+    # [4]=Cód. Est., [5]=Grado, [6]=Curso, [7]=Prueba, [8..]=respuestas
+    e_tipo       = 0
+    e_cod_dane   = 1
+    e_nom_sede   = 2
+    e_estudiante = 3
+    e_id         = 4
+    e_grado      = 5
+    e_grupo      = 6
+    e_materia    = 7
     e_resp       = list(range(n_meta, len(headers)))
 
     print(f"  + Columnas estandarizadas: {len(e_resp)} respuestas")
@@ -432,6 +459,7 @@ def procesar(ruta, resp_correctas):
             continue
 
         cod_dane   = str(row[e_cod_dane]).strip() if len(row) > e_cod_dane and row[e_cod_dane] else ""
+        tipo       = TIPO_MAPPING.get(cod_dane, "")
         nombre_est = re.sub(r'\s+', ' ', str(row[e_estudiante]).strip().upper()) if len(row) > e_estudiante and row[e_estudiante] else "SIN NOMBRE"
         sede       = re.sub(r'\s+', ' ', str(row[e_nom_sede]).strip().upper()) if len(row) > e_nom_sede and row[e_nom_sede] else os.path.splitext(nom)[0]
         cod_est    = re.sub(r'\s+', ' ', str(row[e_id]).strip().upper()) if len(row) > e_id and row[e_id] else ""
@@ -497,7 +525,7 @@ def procesar(ruta, resp_correctas):
         pct = round(num_ok / total_preg, 4) if total_preg else 0
 
         alumnos.append({
-            "cod_dane": cod_dane, "sede": sede, "estudiante": nombre_est, "cod": cod_est,
+            "tipo": tipo, "cod_dane": cod_dane, "sede": sede, "estudiante": nombre_est, "cod": cod_est,
             "grado": grado, "grupo": grupo, "materia": materia_raw,
             "detalles": detalles, "total": total_preg,
             "ok": num_ok, "bad": num_bad, "pct": pct,
@@ -522,7 +550,7 @@ def procesar(ruta, resp_correctas):
     ws.title = "Evaluaciones"
 
     # Construir encabezados
-    cols_meta = ["CÓDIGO DANE SEDE", "NOMBRE SEDE", "NOMBRES ESTUDIANTE",
+    cols_meta = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "NOMBRES ESTUDIANTE",
                   "CÓD. EST.", "GRADO", "CURSO", "PRUEBA"]
     cols_preg = []
     for q in range(1, total_preg + 1):
@@ -549,16 +577,17 @@ def procesar(ruta, resp_correctas):
 
     for i, al in enumerate(alumnos):
         fila = 2 + i
-        ws.cell(fila, 1, al["cod_dane"]).font = ST_CELL_FONT
-        ws.cell(fila, 2, al["sede"].upper()).font = ST_CELL_FONT
-        ws.cell(fila, 3, al["estudiante"].upper()).font = ST_CELL_FONT
-        ws.cell(fila, 4, al["cod"].upper()).font = ST_CELL_FONT
-        ws.cell(fila, 5, al["grado"]).font = ST_CELL_FONT
+        ws.cell(fila, 1, al["tipo"]).font = ST_CELL_FONT
+        ws.cell(fila, 2, al["cod_dane"]).font = ST_CELL_FONT
+        ws.cell(fila, 3, al["sede"].upper()).font = ST_CELL_FONT
+        ws.cell(fila, 4, al["estudiante"].upper()).font = ST_CELL_FONT
+        ws.cell(fila, 5, al["cod"].upper()).font = ST_CELL_FONT
+        ws.cell(fila, 6, al["grado"]).font = ST_CELL_FONT
         gpo = int(al["grupo"]) if al["grupo"].isdigit() else al["grupo"].upper()
-        ws.cell(fila, 6, gpo).font = ST_CELL_FONT
-        ws.cell(fila, 7, MATERIA_NOMBRES.get(al["materia"], al["materia"].upper())).font = ST_CELL_FONT
+        ws.cell(fila, 7, gpo).font = ST_CELL_FONT
+        ws.cell(fila, 8, MATERIA_NOMBRES.get(al["materia"], al["materia"].upper())).font = ST_CELL_FONT
 
-        for c in range(1, 8):
+        for c in range(1, 9):
             cell = ws.cell(fila, c)
             cell.alignment = ST_CELL_ALIGN
             cell.border = ST_BORDER
@@ -631,7 +660,7 @@ def _append_alumnos_to_wb(wb, alumnos, total_preg):
         key = f"{al['grado']}_{sanitizar_sheet(mat_display)}"
         grupos.setdefault(key, []).append(al)
 
-    cols_meta = ["CÓDIGO DANE SEDE", "NOMBRE SEDE", "NOMBRES ESTUDIANTE",
+    cols_meta = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "NOMBRES ESTUDIANTE",
                   "CÓD. EST.", "GRADO", "CURSO", "PRUEBA"]
     cols_preg = []
     for q in range(1, total_preg + 1):
@@ -660,16 +689,17 @@ def _append_alumnos_to_wb(wb, alumnos, total_preg):
 
         for al in grupo_alumnos:
             fila = prox_fila
-            ws.cell(fila, 1, al["cod_dane"]).font = ST_CELL_FONT
-            ws.cell(fila, 2, al["sede"].upper()).font = ST_CELL_FONT
-            ws.cell(fila, 3, al["estudiante"].upper()).font = ST_CELL_FONT
-            ws.cell(fila, 4, al["cod"].upper()).font = ST_CELL_FONT
-            ws.cell(fila, 5, al["grado"]).font = ST_CELL_FONT
+            ws.cell(fila, 1, al["tipo"]).font = ST_CELL_FONT
+            ws.cell(fila, 2, al["cod_dane"]).font = ST_CELL_FONT
+            ws.cell(fila, 3, al["sede"].upper()).font = ST_CELL_FONT
+            ws.cell(fila, 4, al["estudiante"].upper()).font = ST_CELL_FONT
+            ws.cell(fila, 5, al["cod"].upper()).font = ST_CELL_FONT
+            ws.cell(fila, 6, al["grado"]).font = ST_CELL_FONT
             gpo = int(al["grupo"]) if al["grupo"].isdigit() else al["grupo"].upper()
-            ws.cell(fila, 6, gpo).font = ST_CELL_FONT
-            ws.cell(fila, 7, MATERIA_NOMBRES.get(al["materia"], al["materia"].upper())).font = ST_CELL_FONT
+            ws.cell(fila, 7, gpo).font = ST_CELL_FONT
+            ws.cell(fila, 8, MATERIA_NOMBRES.get(al["materia"], al["materia"].upper())).font = ST_CELL_FONT
 
-            for c in range(1, 8):
+            for c in range(1, 9):
                 ws.cell(fila, c).alignment = ST_CELL_ALIGN
                 ws.cell(fila, c).border = ST_BORDER
 
