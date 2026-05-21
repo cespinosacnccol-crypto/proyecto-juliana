@@ -170,53 +170,9 @@ elif nivel == "Base General":
     st.dataframe(tabla, use_container_width=True, hide_index=True)
 
     if os.path.exists(RUTA_ACUM):
-        wb_src = openpyxl.load_workbook(RUTA_ACUM)
-        wb_out = openpyxl.Workbook()
-        wb_out.remove(wb_out.active)
-
-        for sheet_name in wb_src.sheetnames:
-            ws_src = wb_src[sheet_name]
-            ws_out = wb_out.create_sheet(title=sheet_name)
-
-            headers = [str(c.value) if c.value else f"COL{i}" for i, c in enumerate(ws_src[1])]
-            eval_cols_idx = [i for i, h in enumerate(headers) if h.endswith("_EVAL")]
-
-            for r_idx, row in enumerate(ws_src.iter_rows(min_row=1, values_only=False), 1):
-                for c_idx, cell in enumerate(row, 1):
-                    ws_out.cell(row=r_idx, column=c_idx, value=cell.value)
-
-            col_corr = len(headers) + 1
-            col_inc = len(headers) + 2
-            col_pct = len(headers) + 3
-            ws_out.cell(row=1, column=col_corr, value="CORRECTAS")
-            ws_out.cell(row=1, column=col_inc, value="INCORRECTAS")
-            ws_out.cell(row=1, column=col_pct, value="%")
-
-            from openpyxl.styles import Font, PatternFill
-            hdr_fill = PatternFill(start_color="1F3864", end_color="1F3864", fill_type="solid")
-            hdr_font = Font(bold=True, color="FFFFFF", size=11)
-            for c in (col_corr, col_inc, col_pct):
-                ws_out.cell(row=1, column=c).fill = hdr_fill
-                ws_out.cell(row=1, column=c).font = hdr_font
-
-            total_eval = len(eval_cols_idx)
-            if total_eval > 0:
-                for r_idx, row in enumerate(ws_src.iter_rows(min_row=2, values_only=True), 2):
-                    correctas = sum(1 for i in eval_cols_idx if i < len(row) and str(row[i]).strip().upper() == "CORRECTO")
-                    incorrectas = total_eval - correctas
-                    pct = round(correctas / total_eval * 100, 1) if total_eval else 0
-                    ws_out.cell(row=r_idx, column=col_corr, value=correctas)
-                    ws_out.cell(row=r_idx, column=col_inc, value=incorrectas)
-                    ws_out.cell(row=r_idx, column=col_pct, value=pct)
-
-        wb_src.close()
-        buf = io.BytesIO()
-        wb_out.save(buf)
-        buf.seek(0)
-        wb_out.close()
-
-        st.download_button(
-            "⬇️ Descargar ACUMULADO GENERAL.xlsx",
-            buf.read(),
-            "ACUMULADO GENERAL.xlsx",
-        )
+        with open(RUTA_ACUM, "rb") as f:
+            st.download_button(
+                "⬇️ Descargar ACUMULADO GENERAL.xlsx",
+                f.read(),
+                "ACUMULADO GENERAL.xlsx",
+            )
