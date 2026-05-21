@@ -110,6 +110,12 @@ def procesar_datos(df):
         lambda r: round(r["correctas"] / (r["correctas"] + r["incorrectas"]) * 100, 1)
         if (r["correctas"] + r["incorrectas"]) > 0 else 0, axis=1
     )
+    resumen["prom_correctas"] = resumen.apply(
+        lambda r: round(r["correctas"] / r["estudiantes"], 1) if r["estudiantes"] > 0 else 0, axis=1
+    )
+    resumen["prom_incorrectas"] = resumen.apply(
+        lambda r: round(r["incorrectas"] / r["estudiantes"], 1) if r["estudiantes"] > 0 else 0, axis=1
+    )
     resumen = resumen.sort_values(["CÓDIGO DANE SEDE", "GRADO", "PRUEBA"]).reset_index(drop=True)
 
     return {
@@ -151,10 +157,12 @@ if nivel == "Resumen":
     st.markdown(f'<div style="text-align:center;font-size:1.3rem;font-weight:700;color:#1e3a5f;margin:0.5rem 0 1rem 0;">Porcentaje de desempeño global: {pct_global}%</div>', unsafe_allow_html=True)
 
     cols_mostrar = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "GRADO", "PRUEBA",
-                     "estudiantes", "correctas", "incorrectas", "promedio_pct"]
+                     "estudiantes", "correctas", "incorrectas",
+                     "prom_correctas", "prom_incorrectas", "promedio_pct"]
     tabla = RES[cols_mostrar].copy()
     tabla.columns = ["Tipo", "Código DANE", "Sede", "Grado", "Materia",
-                      "Estudiantes", "Correctas", "Incorrectas", "% Desempeño"]
+                      "Estudiantes", "Correctas", "Incorrectas",
+                      "Prom. Correctas", "Prom. Incorrectas", "% Desempeño"]
     st.dataframe(tabla, use_container_width=True, hide_index=True)
 
 # ══════════════════════════════════════════════════════════════════
