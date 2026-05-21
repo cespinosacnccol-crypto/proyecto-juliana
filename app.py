@@ -116,7 +116,8 @@ def procesar_datos(df):
     resumen["prom_incorrectas"] = resumen.apply(
         lambda r: round(r["incorrectas"] / r["estudiantes"], 1) if r["estudiantes"] > 0 else 0, axis=1
     )
-    resumen = resumen.sort_values(["CÓDIGO DANE SEDE", "GRADO", "PRUEBA"]).reset_index(drop=True)
+    resumen["_GRADO_NUM"] = pd.to_numeric(resumen["GRADO"], errors="coerce")
+    resumen = resumen.sort_values(["CÓDIGO DANE SEDE", "_GRADO_NUM", "PRUEBA"]).reset_index(drop=True).drop(columns=["_GRADO_NUM"])
 
     return {
         "df": df,
@@ -135,7 +136,7 @@ DF = datos["df"]
 RES = datos["resumen"]
 
 # ─── NAVEGACIÓN ──────────────────────────────────────────────────
-nivel = st.radio("", ["Resumen", "Base General"],
+nivel = st.radio("Vista", ["Resumen", "Base General"],
                  horizontal=True, label_visibility="collapsed")
 
 # ══════════════════════════════════════════════════════════════════
@@ -161,7 +162,7 @@ if nivel == "Resumen":
     tabla = RES[cols_mostrar].copy()
     tabla.columns = ["Tipo", "Código DANE", "Sede", "Grado", "Materia",
                       "Estudiantes", "Prom. Correctas", "Prom. Incorrectas", "% Desempeño"]
-    st.dataframe(tabla, use_container_width=True, hide_index=True)
+    st.dataframe(tabla, width="stretch", hide_index=True)
 
 # ══════════════════════════════════════════════════════════════════
 # BASE GENERAL (DESCARGA)
@@ -173,7 +174,7 @@ elif nivel == "Base General":
                   "CÓD. EST.", "GRADO", "CURSO", "PRUEBA", "CORRECTAS", "TOTAL", "%"]
     mostrar = [c for c in cols_base if c in DF.columns]
     tabla = DF[mostrar].copy()
-    st.dataframe(tabla, use_container_width=True, hide_index=True)
+    st.dataframe(tabla, width="stretch", hide_index=True)
 
     if os.path.exists(RUTA_ACUM):
         wb = openpyxl.load_workbook(RUTA_ACUM)

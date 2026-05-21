@@ -652,6 +652,20 @@ def procesar(ruta, resp_correctas):
 #  ACTUALIZAR ACUMULADO GENERAL
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _sort_key_grado(name):
+    """Ordena sheets por grado ascendente (3, 5, 7, 9, 11)."""
+    return int(name.split("_")[0])
+
+
+def _reordenar_sheets(wb):
+    """Reordena las hojas del workbook por grado ascendente."""
+    target = sorted(wb.sheetnames, key=_sort_key_grado)
+    for i, name in enumerate(target):
+        cur = wb.sheetnames.index(name)
+        if cur != i:
+            wb.move_sheet(name, offset=i - cur)
+
+
 def _append_alumnos_to_wb(wb, alumnos, total_preg):
     """Agrega alumnos a un workbook acumulado. Retorna el workbook."""
     grupos = {}
@@ -669,7 +683,9 @@ def _append_alumnos_to_wb(wb, alumnos, total_preg):
     cols_sum = ["CORRECTAS", "INCORRECTAS", "TOTAL_EVAL", "PORCENTAJE ACIERTO"]
     todos_cols = cols_meta + cols_preg + cols_sum
 
-    for sheet_name, grupo_alumnos in grupos.items():
+    for sheet_name, grupo_alumnos in sorted(
+        grupos.items(), key=lambda x: _sort_key_grado(x[0])
+    ):
         if sheet_name in wb.sheetnames:
             ws = wb[sheet_name]
         else:
@@ -736,6 +752,7 @@ def _append_alumnos_to_wb(wb, alumnos, total_preg):
 
         print(f"  + Acumulado [{sheet_name}] +{len(grupo_alumnos)} estudiantes "
               f"(fila {prox_fila - len(grupo_alumnos)} en adelante)")
+    _reordenar_sheets(wb)
     return wb
 
 
@@ -751,6 +768,7 @@ def actualizar_acumulado(alumnos):
         if "Sheet" in wb.sheetnames:
             del wb["Sheet"]
     wb = _append_alumnos_to_wb(wb, alumnos, total_preg)
+    _reordenar_sheets(wb)
     try:
         wb.save(ACUMULADO)
         print(f"  + Acumulado guardado: {ACUMULADO}")
@@ -763,7 +781,9 @@ def actualizar_acumulado_wb(alumnos, wb):
     if not alumnos:
         return wb
     total_preg = alumnos[0]["total"]
-    return _append_alumnos_to_wb(wb, alumnos, total_preg)
+    wb = _append_alumnos_to_wb(wb, alumnos, total_preg)
+    _reordenar_sheets(wb)
+    return wb
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -780,6 +800,7 @@ def generar_informe_cliente():
     shutil.copy2(ACUMULADO, destino)
 
     wb = openpyxl.load_workbook(destino)
+    _reordenar_sheets(wb)
     for ws in wb.worksheets:
         for col in range(8, ws.max_column + 1):
             h = str(ws.cell(1, col).value or "")
