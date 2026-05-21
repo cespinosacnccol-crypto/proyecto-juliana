@@ -170,9 +170,31 @@ elif nivel == "Base General":
     st.dataframe(tabla, use_container_width=True, hide_index=True)
 
     if os.path.exists(RUTA_ACUM):
-        with open(RUTA_ACUM, "rb") as f:
-            st.download_button(
-                "⬇️ Descargar ACUMULADO GENERAL.xlsx",
-                f.read(),
-                "ACUMULADO GENERAL.xlsx",
-            )
+        wb = openpyxl.load_workbook(RUTA_ACUM)
+        for ws in wb.worksheets:
+            headers = [str(c.value) if c.value else f"COL{i}" for i, c in enumerate(ws[1])]
+            eval_cols_idx = [i for i, h in enumerate(headers) if h.endswith("_EVAL")]
+            # Encontrar columnas CORRECTAS, INCORRECTAS, PORCENTAJE ACIERTO
+            col_corr = next((i for i, h in enumerate(headers) if h == "CORRECTAS"), None)
+            col_inc = next((i for i, h in enumerate(headers) if h == "INCORRECTAS"), None)
+            col_pct = next((i for i, h in enumerate(headers) if h == "PORCENTAJE ACIERTO"), None)
+            if col_corr is None or col_inc is None or col_pct is None:
+                continue
+            total_eval = len(eval_cols_idx)
+            if total_eval == 0:
+                continue
+            for r_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), 2):
+                correctas = sum(1 for i in eval_cols_idx if i < len(row) and str(row[i]).strip().upper() == "CORRECTO")
+                incorrectas = total_eval - correctas
+                ws.cell(row=r_idx, column=col_corr + 1).value = correctas
+                ws.cell(row=r_idx, column=col_inc + 1).value = incorrectas
+                ws.cell(row=r_idx, column=col_pct + 1).value = correctas / total_eval
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        wb.close()
+        st.download_button(
+            "⬇️ Descargar ACUMULADO GENERAL.xlsx",
+            buf.read(),
+            "ACUMULADO GENERAL.xlsx",
+        )
