@@ -157,12 +157,10 @@ if nivel == "Resumen":
     st.markdown(f'<div style="text-align:center;font-size:1.3rem;font-weight:700;color:#1e3a5f;margin:0.5rem 0 1rem 0;">Porcentaje de desempeño global: {pct_global}%</div>', unsafe_allow_html=True)
 
     cols_mostrar = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "GRADO", "PRUEBA",
-                     "estudiantes", "correctas", "incorrectas",
-                     "prom_correctas", "prom_incorrectas", "promedio_pct"]
+                     "estudiantes", "prom_correctas", "prom_incorrectas", "promedio_pct"]
     tabla = RES[cols_mostrar].copy()
     tabla.columns = ["Tipo", "Código DANE", "Sede", "Grado", "Materia",
-                      "Estudiantes", "Correctas", "Incorrectas",
-                      "Prom. Correctas", "Prom. Incorrectas", "% Desempeño"]
+                      "Estudiantes", "Prom. Correctas", "Prom. Incorrectas", "% Desempeño"]
     st.dataframe(tabla, use_container_width=True, hide_index=True)
 
 # ══════════════════════════════════════════════════════════════════
