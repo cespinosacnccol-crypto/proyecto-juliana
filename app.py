@@ -172,7 +172,7 @@ if nivel == "Resumen":
     total_est_res = int(RES_f["estudiantes"].sum())
 
     # % por materia
-    RES_f["_PRUEBA_NORM"] = RES_f["PRUEBA"].str.replace(r'[^A-Z]', '', regex=True)
+    RES_f["_PRUEBA_NORM"] = RES_f["PRUEBA"].str.replace("Á", "A").str.replace("É", "E").str.replace("Í", "I").str.replace("Ó", "O").str.replace("Ú", "U")
 
     def calc_pct(df, materia_norm):
         sub = df[df["_PRUEBA_NORM"] == materia_norm]
