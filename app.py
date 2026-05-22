@@ -145,10 +145,40 @@ nivel = st.radio("Vista", ["Resumen", "Base General"],
 if nivel == "Resumen":
     st.markdown("### Resumen por sede, grado y materia")
 
-    total_filas = len(RES)
-    total_est_res = int(RES["estudiantes"].sum())
-    total_cor = int(RES["correctas"].sum())
-    total_inc_res = int(RES["incorrectas"].sum())
+    # ── Filters ─────────────────────────────────────────────────
+    opciones_tipo = sorted(RES["TIPO"].dropna().unique().tolist())
+    opciones_grado = sorted(RES["GRADO"].astype(str).unique().tolist(), key=lambda g: int(g))
+    opciones_prueba = sorted(RES["PRUEBA"].unique().tolist())
+
+    if "filtro_tipo" not in st.session_state:
+        st.session_state.filtro_tipo = opciones_tipo
+    if "filtro_grado" not in st.session_state:
+        st.session_state.filtro_grado = opciones_grado
+    if "filtro_prueba" not in st.session_state:
+        st.session_state.filtro_prueba = opciones_prueba
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.multiselect("TIPO", opciones_tipo, default=st.session_state.filtro_tipo,
+                       key="filtro_tipo")
+    with c2:
+        st.multiselect("GRADO", opciones_grado, default=st.session_state.filtro_grado,
+                       key="filtro_grado")
+    with c3:
+        st.multiselect("MATERIA", opciones_prueba, default=st.session_state.filtro_prueba,
+                       key="filtro_prueba")
+
+    filtros = (
+        RES["TIPO"].isin(st.session_state.filtro_tipo) &
+        RES["GRADO"].astype(str).isin(st.session_state.filtro_grado) &
+        RES["PRUEBA"].isin(st.session_state.filtro_prueba)
+    )
+    RES_f = RES[filtros].copy()
+
+    total_filas = len(RES_f)
+    total_est_res = int(RES_f["estudiantes"].sum())
+    total_cor = int(RES_f["correctas"].sum())
+    total_inc_res = int(RES_f["incorrectas"].sum())
     pct_global = round(total_cor / (total_cor + total_inc_res) * 100, 1) if (total_cor + total_inc_res) > 0 else 0
     a, b, c, d = st.columns(4)
     a.metric("Filas", total_filas)
@@ -159,7 +189,7 @@ if nivel == "Resumen":
 
     cols_mostrar = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "GRADO", "PRUEBA",
                      "estudiantes", "prom_correctas", "prom_incorrectas", "promedio_pct"]
-    tabla = RES[cols_mostrar].copy()
+    tabla = RES_f[cols_mostrar].copy()
     tabla.columns = ["Tipo", "Código DANE", "Sede", "Grado", "Materia",
                       "Estudiantes", "Prom. Correctas", "Prom. Incorrectas", "% Desempeño"]
     st.dataframe(tabla, width="stretch", hide_index=True)
