@@ -14,7 +14,7 @@ SISTEMA AUTOMÁTICO DE CALIFICACIÓN DE PRUEBAS — PROYECTO JULIANA
    - Acumula todo el histórico en:              Pruebas acumuladas/ACUMULADO GENERAL.xlsx
 """
 
-import os, shutil, unicodedata, re
+import os, shutil, unicodedata, re, subprocess
 from datetime import datetime
 
 import openpyxl
@@ -874,6 +874,24 @@ def main():
     print(f"  Acumulado      : {ACUMULADO}")
     print(f"  Informe cliente: {DIR_INFORME}")
     print(f"  Procesados     : {DIR_PROCESADOS}")
+
+    # ── Subir a GitHub ──────────────────────────────────────────
+    print("\n[6] Subiendo a GitHub...")
+    try:
+        subprocess.run(["git", "add", "-A"], cwd=BASE, capture_output=True, text=True)
+        r = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=BASE, capture_output=True)
+        if r.returncode != 0:
+            msg = f"actualiza acumulados {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+            subprocess.run(["git", "commit", "-m", msg], cwd=BASE, capture_output=True, text=True)
+            p = subprocess.run(["git", "push"], cwd=BASE, capture_output=True, text=True)
+            if p.returncode == 0:
+                print("  + Subido a GitHub — Streamlit Cloud se actualizará automáticamente")
+            else:
+                print(f"  [!] Error al hacer push: {p.stderr.strip()}")
+        else:
+            print("  + Sin cambios nuevos para subir")
+    except Exception as e:
+        print(f"  [!] Error en git: {e}")
 
 
 if __name__ == "__main__":
