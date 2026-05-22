@@ -148,44 +148,44 @@ if nivel == "Resumen":
     # ── Filters ─────────────────────────────────────────────────
     opciones_tipo = sorted(RES["TIPO"].dropna().unique().tolist())
     opciones_grado = sorted(RES["GRADO"].astype(str).unique().tolist(), key=lambda g: int(g))
-    opciones_prueba = sorted(RES["PRUEBA"].unique().tolist())
 
     if "filtro_tipo" not in st.session_state:
         st.session_state.filtro_tipo = opciones_tipo
     if "filtro_grado" not in st.session_state:
         st.session_state.filtro_grado = opciones_grado
-    if "filtro_prueba" not in st.session_state:
-        st.session_state.filtro_prueba = opciones_prueba
 
-    c1, c2, c3 = st.columns(3)
+    c1, c2 = st.columns(2)
     with c1:
         st.multiselect("TIPO", opciones_tipo, default=st.session_state.filtro_tipo,
                        key="filtro_tipo")
     with c2:
         st.multiselect("GRADO", opciones_grado, default=st.session_state.filtro_grado,
                        key="filtro_grado")
-    with c3:
-        st.multiselect("MATERIA", opciones_prueba, default=st.session_state.filtro_prueba,
-                       key="filtro_prueba")
 
     filtros = (
         RES["TIPO"].isin(st.session_state.filtro_tipo) &
-        RES["GRADO"].astype(str).isin(st.session_state.filtro_grado) &
-        RES["PRUEBA"].isin(st.session_state.filtro_prueba)
+        RES["GRADO"].astype(str).isin(st.session_state.filtro_grado)
     )
     RES_f = RES[filtros].copy()
 
     total_filas = len(RES_f)
     total_est_res = int(RES_f["estudiantes"].sum())
-    total_cor = int(RES_f["correctas"].sum())
-    total_inc_res = int(RES_f["incorrectas"].sum())
-    pct_global = round(total_cor / (total_cor + total_inc_res) * 100, 1) if (total_cor + total_inc_res) > 0 else 0
+
+    # % por materia
+    def calc_pct(df, materia):
+        sub = df[df["PRUEBA"] == materia]
+        c = sub["correctas"].sum()
+        i = sub["incorrectas"].sum()
+        return round(c / (c + i) * 100, 1) if (c + i) > 0 else 0
+
+    pct_len = calc_pct(RES_f, "LENGUAJE")
+    pct_mat = calc_pct(RES_f, "MATEMATICAS")
+
     a, b, c, d = st.columns(4)
     a.metric("Filas", total_filas)
     b.metric("Estudiantes", total_est_res)
-    c.metric("Correctas", total_cor)
-    d.metric("Incorrectas", total_inc_res)
-    st.markdown(f'<div style="text-align:center;font-size:1.3rem;font-weight:700;color:#1e3a5f;margin:0.5rem 0 1rem 0;">Porcentaje de desempeño global: {pct_global}%</div>', unsafe_allow_html=True)
+    c.metric("% Correctas Lenguaje", f"{pct_len}%")
+    d.metric("% Correctas Matemáticas", f"{pct_mat}%")
 
     cols_mostrar = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "GRADO", "PRUEBA",
                      "estudiantes", "prom_correctas", "prom_incorrectas", "promedio_pct"]
