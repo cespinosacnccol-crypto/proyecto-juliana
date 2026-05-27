@@ -1,7 +1,7 @@
 """
 CALIFICADOR RÁPIDO — solo pide un Excel, lo califica y muestra resultados.
 """
-import os, re
+import os, re, unicodedata
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 
@@ -21,7 +21,7 @@ BORDER = Border(
     top=Side(style="thin"), bottom=Side(style="thin")
 )
 
-SUJETO_MAP = {"lenguaje": "LENGUAJE", "lectura": "LENGUAJE", "matematicas": "MATEMÁTICAS"}
+SUJETO_MAP = {"lenguaje": "LENGUAJE", "lectura": "LENGUAJE", "matematicas": "MATEMATICAS"}
 PARED = re.compile(r'[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s]')
 
 def normalizar(v):
@@ -35,21 +35,36 @@ def cargar_respuestas():
             if not row[0]: continue
             g = str(row[0]).strip()
             m = str(row[1]).strip().lower()
+            m = unicodedata.normalize("NFKD", m).encode("ASCII", "ignore").decode()
             for c in SUJETO_MAP:
                 if c in m: m = SUJETO_MAP[c]; break
             p = str(row[2]).strip()
-            r[(g, m, p)] = str(row[3] or "").strip().upper()
+            p = f"P{int(p):02d}" if p.lstrip("-").isdigit() else p.strip().upper()
+            r[(g, m, p)] = normalizar(str(row[3] or ""))
     wb.close()
     return r
 
 def detectar(ws):
     dc = {"NOMBRES ESTUDIANTE": None, "CÓDIGO DANE SEDE": None,
           "NOMBRE SEDE": None, "CÓD. EST.": None, "GRADO": None, "CURSO": None, "PRUEBA": None}
+    fallback = {"NOMBRES ESTUDIANTE": ["ESTUDIANTE", "ALUMNO", "NOMBRE"],
+                "CÓDIGO DANE SEDE": ["CÓD.SEDE", "COD.SEDE", "DANE", "CÓDIGO SEDE"],
+                "NOMBRE SEDE": ["SEDE"],
+                "CÓD. EST.": ["CÓD.EST", "COD.EST", "CÓD EST", "COD EST"],
+                "CURSO": ["CURSO", "GRUPO"],
+                "GRADO": ["GRADO"],
+                "PRUEBA": ["PRUEBA", "MATERIA", "ÁREA", "AREA"]}
     ini = None
     for c in range(1, ws.max_column + 1):
         v = re.sub(r'\s+', ' ', str(ws.cell(1, c).value or "").strip().upper())
         for k in dc:
-            if k in v: dc[k] = c
+            if dc[k] is None and k in v:
+                dc[k] = c
+                continue
+            for pal in fallback.get(k, []):
+                if pal in v:
+                    dc[k] = c
+                    break
         if v.startswith("P") and v[1:2].isdigit() and not v.endswith("_EVAL") and ini is None:
             ini = c
     return dc, ini or 1
@@ -70,7 +85,8 @@ def procesar(ruta):
         nombre = normalizar(fila[cols["NOMBRES ESTUDIANTE"] - 1]) if cols["NOMBRES ESTUDIANTE"] and len(fila) >= cols["NOMBRES ESTUDIANTE"] else ""
         if not nombre: continue
         materia_raw = normalizar(fila[cols["PRUEBA"] - 1]) if cols["PRUEBA"] and len(fila) >= cols["PRUEBA"] else ""
-        materia = "LENGUAJE" if "LENGUAJE" in materia_raw or "LECTURA" in materia_raw else "MATEMÁTICAS"
+        materia_raw_sin = unicodedata.normalize("NFKD", materia_raw).encode("ASCII", "ignore").decode()
+        materia = "LENGUAJE" if "LENGUAJE" in materia_raw_sin or "LECTURA" in materia_raw_sin else "MATEMATICAS"
         grado = normalizar(fila[cols["GRADO"] - 1]) if cols["GRADO"] and len(fila) >= cols["GRADO"] else ""
 
         detalles = []
