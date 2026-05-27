@@ -1,14 +1,14 @@
 """
 CALIFICADOR RÁPIDO — solo pide un Excel, lo califica y muestra resultados.
 """
-import os, re, tkinter as tk
-from tkinter import filedialog
+import os, re
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 RUTA_RESPUESTAS = os.path.join(BASE, "RESPUESTAS CORRECTAS PROYECTO JULIANA.xlsx")
-DIR_RESULTADOS = os.path.join(BASE, "Resultados calificación rápida")
+DIR_ENTRADA = os.path.join(BASE, "Calificación Prueba rápida")
+DIR_SALIDA = os.path.join(BASE, "Resultado prueba rápida")
 
 FILL_HEADER = PatternFill("solid", fgColor="1F3864")
 FONT_HEADER = Font(bold=True, color="FFFFFF", size=10, name="Calibri")
@@ -134,34 +134,37 @@ def main():
     print("  Selecciona un archivo Excel y lo califica")
     print("=" * 55)
 
-    root = tk.Tk()
-    root.withdraw()
-    ruta = filedialog.askopenfilename(
-        title="Selecciona el archivo Excel de la prueba",
-        filetypes=[("Archivos Excel", "*.xlsx"), ("Todos", "*.*")]
+    os.makedirs(DIR_ENTRADA, exist_ok=True)
+    os.makedirs(DIR_SALIDA, exist_ok=True)
+
+    archivos = sorted(
+        os.path.join(DIR_ENTRADA, f)
+        for f in os.listdir(DIR_ENTRADA)
+        if f.lower().endswith(".xlsx") and os.path.isfile(os.path.join(DIR_ENTRADA, f))
     )
-    root.destroy()
-    if not ruta:
-        print("\n  [!] No se seleccionó ningún archivo")
+    if not archivos:
+        print(f"\n  [!] Pon los archivos .xlsx en la carpeta:")
+        print(f"      {DIR_ENTRADA}")
         return
 
-    print(f"\n  Archivo: {os.path.basename(ruta)}")
-    alumnos = procesar(ruta)
+    for ruta in archivos:
+        print(f"\n  Archivo: {os.path.basename(ruta)}")
+        alumnos = procesar(ruta)
 
-    if not alumnos:
-        print("\n  [!] No se encontraron estudiantes válidos")
-        return
+        if not alumnos:
+            print("    [!] No se encontraron estudiantes válidos")
+            continue
 
-    print(f"\n  Estudiantes: {len(alumnos)}")
-    for al in alumnos:
-        print(f"    {al['nombre']:<35} GRADO {al['grado']:<2} {al['materia']:<12} "
-              f"{al['correctas']}/{al['total']} ({al['pct']}%)")
+        print(f"    Estudiantes: {len(alumnos)}")
+        for al in alumnos:
+            print(f"      {al['nombre']:<35} GRADO {al['grado']:<2} {al['materia']:<12} "
+                  f"{al['correctas']}/{al['total']} ({al['pct']}%)")
 
-    os.makedirs(DIR_RESULTADOS, exist_ok=True)
-    salida = os.path.join(DIR_RESULTADOS,
-        os.path.splitext(os.path.basename(ruta))[0] + "_CALIFICADO.xlsx")
-    guardar(alumnos, salida)
-    print(f"  + Guardado en: {DIR_RESULTADOS}")
+        salida = os.path.join(DIR_SALIDA,
+            os.path.splitext(os.path.basename(ruta))[0] + "_CALIFICADO.xlsx")
+        guardar(alumnos, salida)
+        print(f"    + Guardado en: {salida}")
+
     print(f"\n{'='*55}")
     print("  LISTO (sin tocar acumulados ni GitHub)")
     print(f"{'='*55}")
