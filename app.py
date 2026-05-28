@@ -28,10 +28,11 @@ st.markdown("""
     .badge-incomplete { background: #f8d7da; color: #721c24; font-weight: 600; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 12px; }
     .stRadio { display: flex; justify-content: center !important; margin: 0.5rem 0 1.5rem 0 !important; }
     .stRadio > div { justify-content: center !important; }
-    .stRadio [role="radiogroup"] { background: #eef2f6 !important; border-radius: 10px !important; padding: 3px !important; display: flex !important; gap: 3px !important; width: auto !important; }
-    .stRadio [role="radiogroup"] label { flex: 0 0 auto !important; text-align: center !important; padding: 0.4rem 1.8rem !important; border-radius: 8px !important; font-weight: 600 !important; font-size: 0.9rem !important; color: #4a6a8a !important; margin: 0 !important; }
-    .stRadio [role="radiogroup"] input:checked ~ div { background: #1e3a5f !important; color: white !important; border-radius: 8px !important; }
+    .stRadio [role="radiogroup"] { background: #eef2f6 !important; border-radius: 12px !important; padding: 4px !important; display: flex !important; gap: 4px !important; width: auto !important; border: 1px solid #d8e0e8 !important; box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important; }
+    .stRadio [role="radiogroup"] label { flex: 0 0 auto !important; text-align: center !important; padding: 0.5rem 2rem !important; border-radius: 9px !important; font-weight: 600 !important; font-size: 0.9rem !important; color: #5a7a9a !important; margin: 0 !important; transition: all 0.15s !important; }
+    .stRadio [role="radiogroup"] label:hover { background: #dce4ec !important; }
     .stRadio [role="radiogroup"] input { accent-color: #1e3a5f !important; }
+    .stRadio [role="radiogroup"] input:checked ~ div { background: #1e3a5f !important; color: white !important; border-radius: 9px !important; box-shadow: 0 2px 4px rgba(30,58,95,0.15) !important; }
     div[data-testid="stMetric"] { background: white; border-radius: 10px; padding: 0.8rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     div[data-testid="stMetric"] label { font-size: 0.75rem; font-weight: 500; color: #888; }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] { font-size: 1.5rem; font-weight: 700; color: #1e3a5f; }
