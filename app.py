@@ -231,7 +231,7 @@ if nivel == "Resumen":
 # BASE GENERAL (DESCARGA)
 # ══════════════════════════════════════════════════════════════════
 elif nivel == "Base General":
-    st.markdown("### Base General — todos los registros")
+    st.markdown("### Base General")
 
     cols_base = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "NOMBRES ESTUDIANTE",
                   "CÓD. EST.", "GRADO", "CURSO", "PRUEBA", "CORRECTAS", "TOTAL", "%"]
