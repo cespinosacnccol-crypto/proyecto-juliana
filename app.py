@@ -192,9 +192,17 @@ if nivel == "Resumen":
     cols_mostrar = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "GRADO", "PRUEBA",
                      "estudiantes", "prom_correctas", "prom_incorrectas", "promedio_pct"]
     tabla = RES_f[cols_mostrar].copy()
-    tabla.columns = ["Tipo", "Código DANE", "Sede", "Grado", "Materia",
-                      "Estudiantes", "Prom. Correctas", "Prom. Incorrectas", "% Desempeño"]
+    col_renombre = ["Tipo", "Código DANE", "Sede", "Grado", "Materia",
+                     "Estudiantes", "Prom. Correctas", "Prom. Incorrectas", "% Desempeño"]
+    tabla.columns = col_renombre
     st.dataframe(tabla, width="stretch", hide_index=True)
+
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine="openpyxl") as writer:
+        tabla.to_excel(writer, index=False, sheet_name="Resumen")
+    buf.seek(0)
+    st.download_button("Descargar Resumen (.xlsx)", buf.read(),
+                       "resumen_filtrado.xlsx")
 
 # ══════════════════════════════════════════════════════════════════
 # BASE GENERAL (DESCARGA)
