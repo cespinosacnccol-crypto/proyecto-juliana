@@ -169,9 +169,11 @@ if nivel == "Resumen":
     RES_f = RES[filtros].copy()
 
     total_filas = len(RES_f)
-    total_est_res = int(RES_f["estudiantes"].sum())
-
     RES_f["_PRUEBA_NORM"] = RES_f["PRUEBA"].str.replace("Á", "A").str.replace("É", "E").str.replace("Í", "I").str.replace("Ó", "O").str.replace("Ú", "U")
+
+    def total_est(df, materia_norm):
+        sub = df[df["_PRUEBA_NORM"] == materia_norm]
+        return int(sub["estudiantes"].sum())
 
     def calc_pct(df, materia_norm):
         sub = df[df["_PRUEBA_NORM"] == materia_norm]
@@ -179,14 +181,17 @@ if nivel == "Resumen":
         i = sub["incorrectas"].sum()
         return round(c / (c + i) * 100, 1) if (c + i) > 0 else 0
 
+    total_est_len = total_est(RES_f, "LENGUAJE")
+    total_est_mat = total_est(RES_f, "MATEMATICAS")
     pct_len = calc_pct(RES_f, "LENGUAJE")
     pct_mat = calc_pct(RES_f, "MATEMATICAS")
 
-    a, b, c, d = st.columns(4)
+    a, b, c, d, e = st.columns(5)
     a.metric("Filas", total_filas)
-    b.metric("Estudiantes", total_est_res)
-    c.metric("% Correctas Lenguaje", f"{pct_len}%")
-    d.metric("% Correctas Matemáticas", f"{pct_mat}%")
+    b.metric("Total estudiantes Lenguaje", total_est_len)
+    c.metric("Total estudiantes Matemáticas", total_est_mat)
+    d.metric("% Correctas Lenguaje", f"{pct_len}%")
+    e.metric("% Correctas Matemáticas", f"{pct_mat}%")
 
     cols_mostrar = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "GRADO", "PRUEBA",
                      "estudiantes", "prom_correctas", "prom_incorrectas", "promedio_pct"]
