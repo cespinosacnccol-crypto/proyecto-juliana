@@ -143,7 +143,7 @@ nivel = st.radio("Vista", ["Resumen", "Base General"],
 # RESUMEN (VISOR PRINCIPAL)
 # ══════════════════════════════════════════════════════════════════
 if nivel == "Resumen":
-    st.markdown("### Resumen por sede, grado y materia")
+    st.markdown("### Resumen")
 
     # ── Filters ─────────────────────────────────────────────────
     opciones_tipo = sorted(RES["TIPO"].dropna().unique().tolist())
