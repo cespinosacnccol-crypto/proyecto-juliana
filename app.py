@@ -47,6 +47,11 @@ st.markdown("""
     button[kind="secondary"] { border-radius: 8px; font-weight: 500; }
     .stDownloadButton button { border-radius: 8px; background: #1e3a5f; color: white; font-weight: 500; }
     .stDownloadButton button:hover { background: #2d5a8e; }
+    div[data-testid="stMetric"] { background: linear-gradient(135deg, #e8f0fe 0%, #ffffff 100%); border-radius: 12px; padding: 1rem 1.2rem; box-shadow: 0 2px 6px rgba(30,58,95,0.08); border-left: 4px solid #1e3a5f; }
+    div[data-testid="stMetric"] label { font-size: 0.7rem; font-weight: 600; color: #5a7a9a; text-transform: uppercase; letter-spacing: 0.3px; }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] { font-size: 1.6rem; font-weight: 800; color: #1e3a5f; }
+    .stMultiSelect [data-baseweb="select"] span { background: #e8f0fe !important; color: #1e3a5f !important; }
+    .stMultiSelect [data-baseweb="select"] div { border-color: #c0d0e0 !important; }
 </style>
 """, unsafe_allow_html=True)
 
