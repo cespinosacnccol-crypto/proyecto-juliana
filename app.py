@@ -26,9 +26,11 @@ st.markdown("""
     .grade-badge { display: inline-block; background: #e8f0fe; color: #1e3a5f; font-weight: 600; font-size: 0.85rem; padding: 0.2rem 0.7rem; border-radius: 20px; }
     .badge-complete { background: #d4edda; color: #155724; font-weight: 600; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 12px; }
     .badge-incomplete { background: #f8d7da; color: #721c24; font-weight: 600; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 12px; }
-    .stRadio { display: flex; justify-content: center; margin-bottom: 1rem; }
-    .stRadio [role="radiogroup"] { background: white; border-radius: 10px; padding: 0.3rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: flex; gap: 0.2rem; width: fit-content; }
-    .stRadio [role="radiogroup"] label { flex: 1; text-align: center; padding: 0.5rem 1.5rem; border-radius: 8px; font-weight: 600; font-size: 0.95rem; }
+    .stRadio { display: flex; justify-content: center; margin: 0.5rem 0 1.5rem 0; }
+    .stRadio [role="radiogroup"] { background: #f0f4f8; border-radius: 14px; padding: 4px; box-shadow: 0 2px 8px rgba(30,58,95,0.1); display: flex; gap: 4px; width: fit-content; border: 1px solid #e0e6ec; }
+    .stRadio [role="radiogroup"] label { flex: 1; text-align: center; padding: 0.6rem 2rem; border-radius: 10px; font-weight: 600; font-size: 0.95rem; color: #5a7a9a; transition: all 0.2s; cursor: pointer; margin: 0; }
+    .stRadio [role="radiogroup"] label:hover { background: #e0e8f0; color: #1e3a5f; }
+    .stRadio [role="radiogroup"] input:checked ~ div { background: #1e3a5f !important; color: white !important; box-shadow: 0 2px 6px rgba(30,58,95,0.2); }
     .stRadio [role="radiogroup"] label[data-baseweb="radio"] { border: none; }
     .stRadio [role="radiogroup"] input:checked ~ div { background: #1e3a5f; color: white; border-radius: 8px; }
     div[data-testid="stMetric"] { background: white; border-radius: 10px; padding: 0.8rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
