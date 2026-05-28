@@ -26,8 +26,8 @@ st.markdown("""
     .grade-badge { display: inline-block; background: #e8f0fe; color: #1e3a5f; font-weight: 600; font-size: 0.85rem; padding: 0.2rem 0.7rem; border-radius: 20px; }
     .badge-complete { background: #d4edda; color: #155724; font-weight: 600; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 12px; }
     .badge-incomplete { background: #f8d7da; color: #721c24; font-weight: 600; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 12px; }
-    .stRadio [role="radiogroup"] { background: white; border-radius: 10px; padding: 0.3rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: flex; gap: 0.2rem; }
-    .stRadio [role="radiogroup"] label { flex: 1; text-align: center; padding: 0.4rem 0.8rem; border-radius: 8px; font-weight: 500; font-size: 0.8rem; }
+    .stRadio [role="radiogroup"] { background: white; border-radius: 10px; padding: 0.3rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: flex; gap: 0.2rem; margin-bottom: 1rem; }
+    .stRadio [role="radiogroup"] label { flex: 1; text-align: center; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; }
     .stRadio [role="radiogroup"] label[data-baseweb="radio"] { border: none; }
     .stRadio [role="radiogroup"] input:checked ~ div { background: #1e3a5f; color: white; border-radius: 8px; }
     div[data-testid="stMetric"] { background: white; border-radius: 10px; padding: 0.8rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
@@ -50,9 +50,12 @@ st.markdown("""
     div[data-testid="stMetric"] { background: linear-gradient(135deg, #e8f0fe 0%, #ffffff 100%); border-radius: 10px; padding: 0.4rem 0.6rem; box-shadow: 0 2px 6px rgba(30,58,95,0.08); border-left: 3px solid #1e3a5f; height: 100%; display: flex; flex-direction: column; justify-content: center; }
     div[data-testid="stMetric"] label { font-size: 0.65rem; font-weight: 600; color: #4a6a8a; letter-spacing: 0.1px; white-space: normal !important; overflow: visible !important; margin-bottom: 0.1rem; }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] { font-size: 1.1rem; font-weight: 700; color: #1e3a5f; line-height: 1.1; }
-    .stMultiSelect label, .stMultiSelect span, .stMultiSelect div { font-size: 0.8rem !important; }
-    .stMultiSelect [data-baseweb="select"] span { background: #e8f0fe !important; color: #1e3a5f !important; font-size: 0.8rem !important; }
-    .stMultiSelect [data-baseweb="select"] div { border-color: #c0d0e0 !important; }
+    .stMultiSelect label { font-size: 0.9rem !important; font-weight: 700 !important; color: #1e3a5f !important; margin-bottom: 0.2rem !important; }
+    .stMultiSelect [data-baseweb="select"] { min-height: 2.4rem !important; border-radius: 8px !important; }
+    .stMultiSelect [data-baseweb="select"] span { background: #e8f0fe !important; color: #1e3a5f !important; font-size: 0.85rem !important; font-weight: 500 !important; border-radius: 4px !important; }
+    .stMultiSelect [data-baseweb="select"] div { border-color: #c0d0e0 !important; border-radius: 8px !important; font-size: 0.85rem !important; }
+    .stMultiSelect [data-baseweb="select"] input { font-size: 0.85rem !important; }
+    .stMultiSelect [role="listbox"] li { font-size: 0.85rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
