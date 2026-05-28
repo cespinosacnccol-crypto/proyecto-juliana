@@ -15,8 +15,8 @@ st.markdown("""
     .stApp { background: #f0f2f6; }
     .main > div { padding: 1rem 2rem; }
     .header { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 100%); padding: 1.5rem 2rem; border-radius: 16px; margin: -1rem -2rem 1.5rem -2rem; color: white; }
-    .header h1 { margin: 0; font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; }
-    .header p { margin: 0.3rem 0 0 0; opacity: 0.8; font-size: 0.9rem; }
+    .header h1 { margin: 0; font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; text-align: left; }
+    .header p { margin: 0.3rem 0 0 0; opacity: 0.8; font-size: 0.9rem; text-align: left; }
     .card { background: white; border-radius: 12px; padding: 1.2rem 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 1rem; }
     .card-title { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 0.5rem; }
     .stat-value { font-size: 1.6rem; font-weight: 700; color: #1e3a5f; }
