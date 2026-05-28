@@ -119,9 +119,30 @@ def procesar_datos(df):
     resumen["_GRADO_NUM"] = pd.to_numeric(resumen["GRADO"], errors="coerce")
     resumen = resumen.sort_values(["CÓDIGO DANE SEDE", "_GRADO_NUM", "PRUEBA"]).reset_index(drop=True).drop(columns=["_GRADO_NUM"])
 
+    # ── Pivot: Lenguaje y Matemáticas lado a lado por sede+grado ──
+    resumen["_PRUEBA_NORM"] = resumen["PRUEBA"].str.replace("Á","A").str.replace("É","E").str.replace("Í","I").str.replace("Ó","O").str.replace("Ú","U")
+    piv = resumen.pivot_table(
+        index=["CÓDIGO DANE SEDE", "NOMBRE SEDE", "TIPO", "GRADO"],
+        columns="_PRUEBA_NORM",
+        values=["estudiantes", "promedio_pct"],
+        aggfunc="first"
+    ).reset_index()
+    piv.columns = [c[0] if c[1] == "" else f"{c[0]}_{c[1]}" for c in piv.columns]
+    for m in ["MATEMATICAS", "LENGUAJE"]:
+        ec = f"estudiantes_{m}"
+        pc = f"promedio_pct_{m}"
+        if ec not in piv.columns:
+            piv[ec] = 0
+        if pc not in piv.columns:
+            piv[pc] = 0
+    piv["dif_estudiantes"] = abs(piv["estudiantes_MATEMATICAS"] - piv["estudiantes_LENGUAJE"])
+    piv["_GRADO_NUM"] = pd.to_numeric(piv["GRADO"], errors="coerce")
+    piv = piv.sort_values(["CÓDIGO DANE SEDE", "_GRADO_NUM"]).reset_index(drop=True).drop(columns=["_GRADO_NUM"])
+
     return {
         "df": df,
         "resumen": resumen,
+        "resumen_pivot": piv,
     }
 
 # ─── INICIO ──────────────────────────────────────────────────────
@@ -134,6 +155,7 @@ if datos is None:
 
 DF = datos["df"]
 RES = datos["resumen"]
+PIV = datos["resumen_pivot"]
 
 # ─── NAVEGACIÓN ──────────────────────────────────────────────────
 nivel = st.radio("Vista", ["Resumen", "Base General"],
@@ -143,11 +165,11 @@ nivel = st.radio("Vista", ["Resumen", "Base General"],
 # RESUMEN (VISOR PRINCIPAL)
 # ══════════════════════════════════════════════════════════════════
 if nivel == "Resumen":
-    st.markdown("### Resumen por sede, grado y materia")
+    st.markdown("### Resumen por sede y grado — Lenguaje vs Matemáticas")
 
     # ── Filters ─────────────────────────────────────────────────
-    opciones_tipo = sorted(RES["TIPO"].dropna().unique().tolist())
-    opciones_grado = sorted(RES["GRADO"].astype(str).unique().tolist(), key=lambda g: int(g))
+    opciones_tipo = sorted(PIV["TIPO"].dropna().unique().tolist())
+    opciones_grado = sorted(PIV["GRADO"].astype(str).unique().tolist(), key=lambda g: int(g))
 
     if "filtro_tipo" not in st.session_state:
         st.session_state.filtro_tipo = opciones_tipo
@@ -163,38 +185,34 @@ if nivel == "Resumen":
                        key="filtro_grado")
 
     filtros = (
-        RES["TIPO"].isin(st.session_state.filtro_tipo) &
-        RES["GRADO"].astype(str).isin(st.session_state.filtro_grado)
+        PIV["TIPO"].isin(st.session_state.filtro_tipo) &
+        PIV["GRADO"].astype(str).isin(st.session_state.filtro_grado)
     )
-    RES_f = RES[filtros].copy()
+    PIV_f = PIV[filtros].copy()
 
-    total_filas = len(RES_f)
-    total_est_res = int(RES_f["estudiantes"].sum())
-
-    # % por materia
-    RES_f["_PRUEBA_NORM"] = RES_f["PRUEBA"].str.replace("Á", "A").str.replace("É", "E").str.replace("Í", "I").str.replace("Ó", "O").str.replace("Ú", "U")
-
-    def calc_pct(df, materia_norm):
-        sub = df[df["_PRUEBA_NORM"] == materia_norm]
-        c = sub["correctas"].sum()
-        i = sub["incorrectas"].sum()
-        return round(c / (c + i) * 100, 1) if (c + i) > 0 else 0
-
-    pct_len = calc_pct(RES_f, "LENGUAJE")
-    pct_mat = calc_pct(RES_f, "MATEMATICAS")
+    total_sedes = len(PIV_f)
+    total_mat = int(PIV_f["estudiantes_MATEMATICAS"].sum())
+    total_len = int(PIV_f["estudiantes_LENGUAJE"].sum())
+    total_correctas_mat = int((PIV_f["promedio_pct_MATEMATICAS"] * PIV_f["estudiantes_MATEMATICAS"] / 100 * 20).sum())
+    total_correctas_len = int((PIV_f["promedio_pct_LENGUAJE"] * PIV_f["estudiantes_LENGUAJE"] / 100 * 20).sum())
+    pct_mat_prom = round(PIV_f["promedio_pct_MATEMATICAS"].mean(), 1) if len(PIV_f) else 0
+    pct_len_prom = round(PIV_f["promedio_pct_LENGUAJE"].mean(), 1) if len(PIV_f) else 0
 
     a, b, c, d = st.columns(4)
-    a.metric("Filas", total_filas)
-    b.metric("Estudiantes", total_est_res)
-    c.metric("% Correctas Lenguaje", f"{pct_len}%")
-    d.metric("% Correctas Matemáticas", f"{pct_mat}%")
+    a.metric("Sedes / Grados", total_sedes)
+    b.metric("Est. Matemáticas", total_mat)
+    c.metric("% Prom. Lenguaje", f"{pct_len_prom}%")
+    d.metric("% Prom. Matemáticas", f"{pct_mat_prom}%")
 
-    cols_mostrar = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "GRADO", "PRUEBA",
-                     "estudiantes", "prom_correctas", "prom_incorrectas", "promedio_pct"]
-    tabla = RES_f[cols_mostrar].copy()
-    col_renombre = ["Tipo", "Código DANE", "Sede", "Grado", "Materia",
-                     "Estudiantes", "Prom. Correctas", "Prom. Incorrectas", "% Desempeño"]
-    tabla.columns = col_renombre
+    cols_piv = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "GRADO",
+                 "estudiantes_LENGUAJE", "promedio_pct_LENGUAJE",
+                 "estudiantes_MATEMATICAS", "promedio_pct_MATEMATICAS",
+                 "dif_estudiantes"]
+    tabla = PIV_f[cols_piv].copy()
+    tabla.columns = ["Tipo", "Código DANE", "Sede", "Grado",
+                      "Est. Lenguaje", "% Lenguaje",
+                      "Est. Matemáticas", "% Matemáticas",
+                      "Diferencia"]
     st.dataframe(tabla, width="stretch", hide_index=True)
 
     buf = io.BytesIO()
