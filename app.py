@@ -27,14 +27,14 @@ st.markdown("""
     .badge-complete { background: #d4edda; color: #155724; font-weight: 600; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 12px; }
     .badge-incomplete { background: #f8d7da; color: #721c24; font-weight: 600; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 12px; }
     .stRadio [role="radiogroup"] { background: white; border-radius: 10px; padding: 0.3rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: flex; gap: 0.2rem; }
-    .stRadio [role="radiogroup"] label { flex: 1; text-align: center; padding: 0.4rem 0.8rem; border-radius: 8px; font-weight: 500; font-size: 0.85rem; }
+    .stRadio [role="radiogroup"] label { flex: 1; text-align: center; padding: 0.4rem 0.8rem; border-radius: 8px; font-weight: 500; font-size: 0.8rem; }
     .stRadio [role="radiogroup"] label[data-baseweb="radio"] { border: none; }
     .stRadio [role="radiogroup"] input:checked ~ div { background: #1e3a5f; color: white; border-radius: 8px; }
     div[data-testid="stMetric"] { background: white; border-radius: 10px; padding: 0.8rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     div[data-testid="stMetric"] label { font-size: 0.75rem; font-weight: 500; color: #888; }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] { font-size: 1.5rem; font-weight: 700; color: #1e3a5f; }
     .stDataFrame { border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .stDataFrame td, .stDataFrame th { font-size: 0.8rem; }
+    .stDataFrame td, .stDataFrame th { font-size: 0.75rem; }
     .inc-alert { background: #fff5f5; border-left: 4px solid #e53e3e; border-radius: 8px; padding: 0.8rem 1rem; margin: 0.5rem 0; }
     .stExpander { background: white; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: none !important; margin-bottom: 0.6rem; }
     .stExpander summary { font-weight: 600; padding: 0.6rem 1rem; }
@@ -47,10 +47,11 @@ st.markdown("""
     button[kind="secondary"] { border-radius: 8px; font-weight: 500; }
     .stDownloadButton button { border-radius: 8px; background: #1e3a5f; color: white; font-weight: 500; }
     .stDownloadButton button:hover { background: #2d5a8e; }
-    div[data-testid="stMetric"] { background: linear-gradient(135deg, #e8f0fe 0%, #ffffff 100%); border-radius: 12px; padding: 0.8rem 1rem; box-shadow: 0 2px 6px rgba(30,58,95,0.08); border-left: 4px solid #1e3a5f; height: 100%; display: flex; flex-direction: column; justify-content: center; }
-    div[data-testid="stMetric"] label { font-size: 0.8rem; font-weight: 700; color: #1e3a5f; letter-spacing: 0.2px; white-space: normal !important; overflow: visible !important; margin-bottom: 0.2rem; }
-    div[data-testid="stMetric"] div[data-testid="stMetricValue"] { font-size: 1.8rem; font-weight: 800; color: #1e3a5f; line-height: 1.2; }
-    .stMultiSelect [data-baseweb="select"] span { background: #e8f0fe !important; color: #1e3a5f !important; }
+    div[data-testid="stMetric"] { background: linear-gradient(135deg, #e8f0fe 0%, #ffffff 100%); border-radius: 12px; padding: 0.6rem 1rem; box-shadow: 0 2px 6px rgba(30,58,95,0.08); border-left: 4px solid #1e3a5f; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+    div[data-testid="stMetric"] label { font-size: 0.75rem; font-weight: 600; color: #4a6a8a; letter-spacing: 0.2px; white-space: normal !important; overflow: visible !important; margin-bottom: 0.1rem; }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] { font-size: 1.3rem; font-weight: 700; color: #1e3a5f; line-height: 1.1; }
+    .stMultiSelect label, .stMultiSelect span, .stMultiSelect div { font-size: 0.8rem !important; }
+    .stMultiSelect [data-baseweb="select"] span { background: #e8f0fe !important; color: #1e3a5f !important; font-size: 0.8rem !important; }
     .stMultiSelect [data-baseweb="select"] div { border-color: #c0d0e0 !important; }
 </style>
 """, unsafe_allow_html=True)
