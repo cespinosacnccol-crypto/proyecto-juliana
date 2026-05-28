@@ -30,11 +30,11 @@ st.markdown("""
     .row-widget.stRadio { display: flex !important; justify-content: center !important; width: 100% !important; margin: 0.8rem 0 1.5rem 0 !important; }
     .stRadio { display: flex !important; justify-content: center !important; width: 100% !important; }
     .stRadio > div { display: flex !important; justify-content: center !important; width: 100% !important; }
-    .stRadio [role="radiogroup"] { background: #dce4ec !important; border-radius: 14px !important; padding: 5px !important; display: flex !important; gap: 5px !important; width: auto !important; border: 1px solid #c8d2dc !important; box-shadow: 0 3px 8px rgba(30,58,95,0.12) !important; }
-    .stRadio [role="radiogroup"] label { flex: 0 0 auto !important; text-align: center !important; padding: 0.5rem 2rem !important; border-radius: 10px !important; font-weight: 700 !important; font-size: 0.95rem !important; color: #2c4a6a !important; margin: 0 !important; transition: all 0.15s !important; }
-    .stRadio [role="radiogroup"] label:hover { background: #c0cce0 !important; }
+    .stRadio [role="radiogroup"] { background: linear-gradient(135deg, #e8f0fe 0%, #ffffff 100%) !important; border-radius: 12px !important; padding: 6px !important; display: flex !important; gap: 6px !important; width: auto !important; border: none !important; box-shadow: 0 2px 6px rgba(30,58,95,0.08) !important; border-left: 4px solid #1e3a5f !important; }
+    .stRadio [role="radiogroup"] label { flex: 0 0 auto !important; text-align: center !important; padding: 0.5rem 2rem !important; border-radius: 9px !important; font-weight: 700 !important; font-size: 0.95rem !important; color: #4a6a8a !important; margin: 0 !important; transition: all 0.15s !important; }
+    .stRadio [role="radiogroup"] label:hover { background: rgba(30,58,95,0.06) !important; }
     .stRadio [role="radiogroup"] input { accent-color: #1e3a5f !important; }
-    .stRadio [role="radiogroup"] input:checked ~ div { background: #1e3a5f !important; color: white !important; border-radius: 10px !important; box-shadow: 0 3px 6px rgba(30,58,95,0.25) !important; }
+    .stRadio [role="radiogroup"] input:checked ~ div { background: #1e3a5f !important; color: white !important; border-radius: 9px !important; box-shadow: 0 2px 4px rgba(30,58,95,0.15) !important; }
     div[data-testid="stMetric"] { background: white; border-radius: 10px; padding: 0.8rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     div[data-testid="stMetric"] label { font-size: 0.75rem; font-weight: 500; color: #888; }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] { font-size: 1.5rem; font-weight: 700; color: #1e3a5f; }
