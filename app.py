@@ -169,6 +169,7 @@ if nivel == "Resumen":
     RES_f = RES[filtros].copy()
 
     total_filas = len(RES_f)
+    total_colegios = RES_f["CÓDIGO DANE SEDE"].nunique()
     RES_f["_PRUEBA_NORM"] = RES_f["PRUEBA"].str.replace("Á", "A").str.replace("É", "E").str.replace("Í", "I").str.replace("Ó", "O").str.replace("Ú", "U")
 
     def total_est(df, materia_norm):
@@ -186,12 +187,13 @@ if nivel == "Resumen":
     pct_len = calc_pct(RES_f, "LENGUAJE")
     pct_mat = calc_pct(RES_f, "MATEMATICAS")
 
-    a, b, c, d, e = st.columns(5)
+    a, b, c, d, e, f = st.columns(6)
     a.metric("Filas", total_filas)
-    b.metric("Total estudiantes Lenguaje", total_est_len)
-    c.metric("Total estudiantes Matemáticas", total_est_mat)
-    d.metric("% Correctas Lenguaje", f"{pct_len}%")
-    e.metric("% Correctas Matemáticas", f"{pct_mat}%")
+    b.metric("Total Colegios", total_colegios)
+    c.metric("Total estudiantes Lenguaje", total_est_len)
+    d.metric("Total estudiantes Matemáticas", total_est_mat)
+    e.metric("% Correctas Lenguaje", f"{pct_len}%")
+    f.metric("% Correctas Matemáticas", f"{pct_mat}%")
 
     cols_mostrar = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "GRADO", "PRUEBA",
                      "estudiantes", "prom_correctas", "prom_incorrectas", "promedio_pct"]
