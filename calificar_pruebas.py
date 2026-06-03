@@ -792,8 +792,10 @@ def actualizar_acumulado_wb(alumnos, wb):
 
 def generar_informe_cliente():
     """Copia ACUMULADO GENERAL.xlsx a INFORME CLIENTE eliminando
-    las columnas de respuesta (P01, P02, ...) dejando solo _eval."""
+    las columnas de respuesta (P01, P02, ...) dejando solo _eval
+    y actualizando las fórmulas de CORRECTAS/INCORRECTAS/PORCENTAJE."""
     import re
+    from openpyxl.utils import get_column_letter
     if not os.path.exists(ACUMULADO):
         return
 
@@ -808,30 +810,25 @@ def generar_informe_cliente():
         p_1idx = sorted([c for c, h in enumerate(headers, 1) if re.match(r'^P\d{2}$', h)], reverse=True)
         for ci in p_1idx:
             ws.delete_cols(ci)
-        # Recalcular headers después de borrar
-        headers = [str(ws.cell(1, c).value or "") for c in range(1, ws.max_column + 1)]
-        eval_idx = [i for i, h in enumerate(headers) if re.match(r'^P\d{2}_EVAL$', h)]
-        total = len(eval_idx)
-        def col_idx(name):
-            try:
-                return next(i for i, h in enumerate(headers) if h == name)
-            except StopIteration:
-                return None
-        ci_corr = col_idx("CORRECTAS")
-        ci_inc  = col_idx("INCORRECTAS")
-        ci_pct  = col_idx("PORCENTAJE ACIERTO")
-        if ci_corr is None or ci_pct is None:
-            continue
-        for r_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), 2):
-            if row[0] is None:
-                continue
-            correctas = sum(1 for i in eval_idx if i < len(row) and str(row[i]).strip().upper() == "CORRECTO")
-            ws.cell(r_idx, ci_corr + 1).value = correctas
-            if ci_inc is not None:
-                ws.cell(r_idx, ci_inc + 1).value = total - correctas
-            ws.cell(r_idx, ci_pct + 1).value = correctas / total if total else 0
-
+        # Nuevas posiciones: 8 meta + 20 eval = columnas 9-28 eval
+        n_meta = 8
+        n_preg = 20
+        col_ini_eval = n_meta + 1        # 9  = I
+        col_fin_eval = n_meta + n_preg   # 28 = AB
+        col_corr = n_meta + n_preg + 1   # 29 = AC
+        col_inc  = col_corr + 1          # 30 = AD
+        col_tot  = col_inc + 1           # 31 = AE
+        col_pct  = col_tot + 1           # 32 = AF
+        letra_ini = get_column_letter(col_ini_eval)
+        letra_fin = get_column_letter(col_fin_eval)
+        letra_corr = get_column_letter(col_corr)
+        letra_tot  = get_column_letter(col_tot)
+        for r_idx in range(2, ws.max_row + 1):
+            ws.cell(r_idx, col_corr).value = f'=COUNTIF({letra_ini}{r_idx}:{letra_fin}{r_idx},"CORRECTO")'
+            ws.cell(r_idx, col_inc).value  = f'=COUNTIF({letra_ini}{r_idx}:{letra_fin}{r_idx},"INCORRECTO")'
+            ws.cell(r_idx, col_pct).value  = f'={letra_corr}{r_idx}/{letra_tot}{r_idx}'
     wb.save(destino)
+    print(f"  + Informe cliente generado: {destino}")
     print(f"  + Informe cliente: {destino}")
 
 
