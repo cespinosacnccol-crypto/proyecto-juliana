@@ -216,6 +216,23 @@ if nivel == "Resumen":
     e.metric("% Lenguaje", f"{pct_len}%")
     f.metric("% Matemáticas", f"{pct_mat}%")
 
+    # ── % Acierto por TIPO y Materia ──
+    def pct_tipo_materia(df, tipo, materia_norm):
+        sub = df[(df["TIPO"] == tipo) & (df["_PRUEBA_NORM"] == materia_norm)]
+        c = sub["correctas"].sum()
+        i = sub["incorrectas"].sum()
+        return round(c / (c + i) * 100, 1) if (c + i) > 0 else 0
+    tipos_disponibles = sorted(RES_f["TIPO"].dropna().unique().tolist())
+    st.markdown("#### % Acierto por Tipo")
+    cols = st.columns(len(tipos_disponibles) * 2 if tipos_disponibles else 2)
+    idx = 0
+    for t in tipos_disponibles:
+        p_l = pct_tipo_materia(RES_f, t, "LENGUAJE")
+        p_m = pct_tipo_materia(RES_f, t, "MATEMATICAS")
+        cols[idx].metric(f"{t} - Lenguaje", f"{p_l}%")
+        cols[idx+1].metric(f"{t} - Matemáticas", f"{p_m}%")
+        idx += 2
+
     cols_mostrar = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "GRADO", "PRUEBA",
                      "estudiantes", "prom_correctas", "prom_incorrectas", "promedio_pct"]
     tabla = RES_f[cols_mostrar].copy()
