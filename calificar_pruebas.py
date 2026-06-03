@@ -678,7 +678,6 @@ def _append_alumnos_to_wb(wb, alumnos, total_preg):
                   "CÓD. EST.", "GRADO", "CURSO", "PRUEBA"]
     cols_preg = []
     for q in range(1, total_preg + 1):
-        cols_preg.append(f"P{q:02d}")
         cols_preg.append(f"P{q:02d}_EVAL")
     cols_sum = ["CORRECTAS", "INCORRECTAS", "TOTAL_EVAL", "PORCENTAJE ACIERTO"]
     todos_cols = cols_meta + cols_preg + cols_sum
@@ -696,8 +695,8 @@ def _append_alumnos_to_wb(wb, alumnos, total_preg):
             ancho_columnas(ws, todos_cols)
             ws.freeze_panes = "A2"
 
-        col_ini_eval = len(cols_meta) + 2
-        col_fin_eval = len(cols_meta) + total_preg * 2
+        col_ini_eval = len(cols_meta) + 1
+        col_fin_eval = len(cols_meta) + total_preg
         letra_ini = get_column_letter(col_ini_eval)
         letra_fin = get_column_letter(col_fin_eval)
 
@@ -720,11 +719,7 @@ def _append_alumnos_to_wb(wb, alumnos, total_preg):
                 ws.cell(fila, c).border = ST_BORDER
 
             for q, det in enumerate(al["detalles"]):
-                col_resp = len(cols_meta) + 1 + q * 2
-                col_eval = col_resp + 1
-                ws.cell(fila, col_resp, det["resp"]).font = ST_CELL_FONT
-                ws.cell(fila, col_resp).alignment = ST_CELL_ALIGN
-                ws.cell(fila, col_resp).border = ST_BORDER
+                col_eval = len(cols_meta) + 1 + q
                 colorear_eval(ws.cell(fila, col_eval), "CORRECTO" if det["ok"] else "INCORRECTO")
 
             col_corr = len(todos_cols) - 3

@@ -271,12 +271,6 @@ elif nivel == "Base General":
         wb = openpyxl.load_workbook(RUTA_ACUM)
         for ws in wb.worksheets:
             headers = [str(c.value) if c.value else f"COL{i}" for i, c in enumerate(ws[1])]
-            # Eliminar columnas P01-P20 (respuestas originales), conservar P01_EVAL-P20_EVAL
-            p_cols_1idx = sorted([i+1 for i, h in enumerate(headers) if re.match(r'^P\d{2}$', h)], reverse=True)
-            for ci in p_cols_1idx:
-                ws.delete_cols(ci)
-            # Releer headers después de eliminar columnas
-            headers = [str(c.value) if c.value else f"COL{i}" for i, c in enumerate(ws[1])]
             eval_cols_idx = [i for i, h in enumerate(headers) if re.match(r'^P\d{2}_EVAL$', h)]
             col_corr = next((i for i, h in enumerate(headers) if h == "CORRECTAS"), None)
             col_inc = next((i for i, h in enumerate(headers) if h == "INCORRECTAS"), None)
