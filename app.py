@@ -106,8 +106,9 @@ def leer_acumulado():
                 meta[e_name] = str(v).strip().upper()
             meta["_KEY"] = meta["CÓD. EST."] if meta["CÓD. EST."] else meta["NOMBRES ESTUDIANTE"]
             meta["CORRECTAS"] = correctas
-            meta["TOTAL"] = total
-            meta["%"] = round(correctas / total * 100, 1) if total else 0
+            meta["INCORRECTAS"] = total - correctas
+            meta["TOTAL_EVAL"] = total
+            meta["PORCENTAJE ACIERTO"] = round(correctas / total * 100, 1) if total else 0
             rows.append(meta)
         if rows:
             dfs.append(pd.DataFrame(rows))
@@ -125,7 +126,7 @@ def procesar_datos(df):
                       df["NOMBRES ESTUDIANTE"] + "|" + df["GRADO"].astype(str) + "|" + df["CURSO"].astype(str))
 
     # ── Resumen agrupado por sede + grado + materia ──
-    df["INCORRECTAS"] = df["TOTAL"] - df["CORRECTAS"]
+    df["INCORRECTAS"] = df["TOTAL_EVAL"] - df["CORRECTAS"]
     resumen = df.groupby(["CÓDIGO DANE SEDE", "NOMBRE SEDE", "TIPO", "GRADO", "PRUEBA"]).agg(
         estudiantes=("_NAMEKEY", "nunique"),
         correctas=("CORRECTAS", "sum"),
@@ -260,8 +261,8 @@ elif nivel == "Base General":
 
     cols_base = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "NOMBRES ESTUDIANTE",
                   "CÓD. EST.", "GRADO", "CURSO", "PRUEBA"]
-    eval_cols = sorted([c for c in DF.columns if c.endswith("_EVAL")], key=lambda x: int(x[1:3]))
-    extra = ["CORRECTAS", "TOTAL", "%"]
+    eval_cols = sorted([c for c in DF.columns if re.match(r'^P\d{2}_EVAL$', c)], key=lambda x: int(x[1:3]))
+    extra = ["CORRECTAS", "INCORRECTAS", "TOTAL_EVAL", "PORCENTAJE ACIERTO"]
     mostrar = [c for c in cols_base + eval_cols + extra if c in DF.columns]
     tabla = DF[mostrar].copy()
     st.dataframe(tabla, width="stretch", hide_index=True)
