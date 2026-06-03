@@ -85,7 +85,8 @@ def leer_acumulado():
     for sheet in wb.sheetnames:
         ws = wb[sheet]
         headers = [str(c.value) if c.value else f"COL{i}" for i, c in enumerate(ws[1])]
-        eval_cols = [i for i, h in enumerate(headers) if h.endswith("_EVAL")]
+        eval_cols = [i for i, h in enumerate(headers) if re.match(r'^P\d{2}_EVAL$', h)]
+        p_cols_idx = [i for i, h in enumerate(headers) if re.match(r'^P\d{2}$', h)]
         meta_nombres = ["TIPO", "NOMBRE SEDE", "CÓDIGO DANE SEDE", "NOMBRES ESTUDIANTE",
                          "CÓD. EST.", "GRADO", "CURSO", "PRUEBA"]
         meta_idx = [(i, headers.index(c)) for i, c in enumerate(meta_nombres) if c in headers]
@@ -100,6 +101,14 @@ def leer_acumulado():
                 v = row[col_i] if col_i < len(row) and row[col_i] is not None else ""
                 val = re.sub(r'\s+', ' ', str(v).strip().upper())
                 meta[meta_nombres[mi]] = val
+            for i in p_cols_idx:
+                p_name = headers[i]
+                v = row[i] if i < len(row) and row[i] is not None else ""
+                meta[p_name] = str(v).strip().upper()
+            for i in eval_cols:
+                e_name = headers[i]
+                v = row[i] if i < len(row) and row[i] is not None else ""
+                meta[e_name] = str(v).strip().upper()
             meta["_KEY"] = meta["CÓD. EST."] if meta["CÓD. EST."] else meta["NOMBRES ESTUDIANTE"]
             meta["CORRECTAS"] = correctas
             meta["TOTAL"] = total
@@ -255,8 +264,11 @@ elif nivel == "Base General":
     st.markdown("### Base General")
 
     cols_base = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "NOMBRES ESTUDIANTE",
-                  "CÓD. EST.", "GRADO", "CURSO", "PRUEBA", "CORRECTAS", "TOTAL", "%"]
-    mostrar = [c for c in cols_base if c in DF.columns]
+                  "CÓD. EST.", "GRADO", "CURSO", "PRUEBA"]
+    p_cols = sorted([c for c in DF.columns if re.match(r'^P\d{2}$', c)], key=lambda x: int(x[1:]))
+    eval_cols = sorted([c for c in DF.columns if c.endswith("_EVAL")], key=lambda x: int(x[1:3]))
+    extra = ["CORRECTAS", "TOTAL", "%"]
+    mostrar = [c for c in cols_base + p_cols + eval_cols + extra if c in DF.columns]
     tabla = DF[mostrar].copy()
     st.dataframe(tabla, width="stretch", hide_index=True)
 
@@ -264,7 +276,7 @@ elif nivel == "Base General":
         wb = openpyxl.load_workbook(RUTA_ACUM)
         for ws in wb.worksheets:
             headers = [str(c.value) if c.value else f"COL{i}" for i, c in enumerate(ws[1])]
-            eval_cols_idx = [i for i, h in enumerate(headers) if h.endswith("_EVAL")]
+            eval_cols_idx = [i for i, h in enumerate(headers) if re.match(r'^P\d{2}_EVAL$', h)]
             # Encontrar columnas CORRECTAS, INCORRECTAS, PORCENTAJE ACIERTO
             col_corr = next((i for i, h in enumerate(headers) if h == "CORRECTAS"), None)
             col_inc = next((i for i, h in enumerate(headers) if h == "INCORRECTAS"), None)
