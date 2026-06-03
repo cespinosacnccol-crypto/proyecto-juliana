@@ -108,7 +108,7 @@ def leer_acumulado():
             meta["CORRECTAS"] = correctas
             meta["INCORRECTAS"] = total - correctas
             meta["TOTAL_EVAL"] = total
-            meta["PORCENTAJE ACIERTO"] = round(correctas / total * 100, 1) if total else 0
+            meta["PORCENTAJE ACIERTO"] = round(correctas / total, 4) if total else 0
             rows.append(meta)
         if rows:
             dfs.append(pd.DataFrame(rows))
