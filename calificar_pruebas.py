@@ -678,7 +678,6 @@ def _append_alumnos_to_wb(wb, alumnos, total_preg):
                   "CÓD. EST.", "GRADO", "CURSO", "PRUEBA"]
     cols_preg = []
     for q in range(1, total_preg + 1):
-        cols_preg.append(f"P{q:02d}")
         cols_preg.append(f"P{q:02d}_EVAL")
     cols_sum = ["CORRECTAS", "INCORRECTAS", "TOTAL_EVAL", "PORCENTAJE ACIERTO"]
     todos_cols = cols_meta + cols_preg + cols_sum
@@ -696,8 +695,8 @@ def _append_alumnos_to_wb(wb, alumnos, total_preg):
             ancho_columnas(ws, todos_cols)
             ws.freeze_panes = "A2"
 
-        col_ini_eval = len(cols_meta) + 2
-        col_fin_eval = len(cols_meta) + total_preg * 2
+        col_ini_eval = len(cols_meta) + 1
+        col_fin_eval = len(cols_meta) + total_preg
         letra_ini = get_column_letter(col_ini_eval)
         letra_fin = get_column_letter(col_fin_eval)
 
@@ -720,11 +719,7 @@ def _append_alumnos_to_wb(wb, alumnos, total_preg):
                 ws.cell(fila, c).border = ST_BORDER
 
             for q, det in enumerate(al["detalles"]):
-                col_resp = len(cols_meta) + 1 + q * 2
-                col_eval = col_resp + 1
-                ws.cell(fila, col_resp, det["resp"]).font = ST_CELL_FONT
-                ws.cell(fila, col_resp).alignment = ST_CELL_ALIGN
-                ws.cell(fila, col_resp).border = ST_BORDER
+                col_eval = len(cols_meta) + 1 + q
                 colorear_eval(ws.cell(fila, col_eval), "CORRECTO" if det["ok"] else "INCORRECTO")
 
             col_corr = len(todos_cols) - 3
@@ -791,11 +786,8 @@ def actualizar_acumulado_wb(alumnos, wb):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def generar_informe_cliente():
-    """Copia ACUMULADO GENERAL.xlsx a INFORME CLIENTE eliminando
-    las columnas de respuesta (P01, P02, ...) dejando solo _eval
-    y actualizando las fórmulas de CORRECTAS/INCORRECTAS/PORCENTAJE."""
-    import re
-    from openpyxl.utils import get_column_letter
+    """Copia ACUMULADO GENERAL.xlsx a INFORME CLIENTE y elimina
+    las columnas de respuesta (P01, P02, ...) dejando solo _eval."""
     if not os.path.exists(ACUMULADO):
         return
 
@@ -806,29 +798,27 @@ def generar_informe_cliente():
     _reordenar_sheets(wb)
     for ws in wb.worksheets:
         headers = [str(ws.cell(1, c).value or "") for c in range(1, ws.max_column + 1)]
-        # Eliminar columnas P01-P20 (de mayor a menor para no alterar índices)
-        p_1idx = sorted([c for c, h in enumerate(headers, 1) if re.match(r'^P\d{2}$', h)], reverse=True)
-        for ci in p_1idx:
+        p_cols = sorted([i+1 for i, h in enumerate(headers) if re.match(r'^P\d{2}$', h)], reverse=True)
+        for ci in p_cols:
             ws.delete_cols(ci)
-        # Nuevas posiciones: 8 meta + 20 eval = columnas 9-28 eval
-        n_meta = 8
-        n_preg = 20
-        col_ini_eval = n_meta + 1        # 9  = I
-        col_fin_eval = n_meta + n_preg   # 28 = AB
-        col_corr = n_meta + n_preg + 1   # 29 = AC
-        col_inc  = col_corr + 1          # 30 = AD
-        col_tot  = col_inc + 1           # 31 = AE
-        col_pct  = col_tot + 1           # 32 = AF
-        letra_ini = get_column_letter(col_ini_eval)
-        letra_fin = get_column_letter(col_fin_eval)
-        letra_corr = get_column_letter(col_corr)
-        letra_tot  = get_column_letter(col_tot)
-        for r_idx in range(2, ws.max_row + 1):
-            ws.cell(r_idx, col_corr).value = f'=COUNTIF({letra_ini}{r_idx}:{letra_fin}{r_idx},"CORRECTO")'
-            ws.cell(r_idx, col_inc).value  = f'=COUNTIF({letra_ini}{r_idx}:{letra_fin}{r_idx},"INCORRECTO")'
-            ws.cell(r_idx, col_pct).value  = f'={letra_corr}{r_idx}/{letra_tot}{r_idx}'
+        headers = [str(ws.cell(1, c).value or "") for c in range(1, ws.max_column + 1)]
+        eval_idx = [i for i, h in enumerate(headers) if re.match(r'^P\d{2}_EVAL$', h)]
+        total = len(eval_idx)
+        col_corr = next((i+1 for i, h in enumerate(headers) if h == "CORRECTAS"), None)
+        col_inc = next((i+1 for i, h in enumerate(headers) if h == "INCORRECTAS"), None)
+        col_pct = next((i+1 for i, h in enumerate(headers) if h == "PORCENTAJE ACIERTO"), None)
+        for r_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), 2):
+            if row[0] is None:
+                continue
+            correctas = sum(1 for i in eval_idx if i < len(row) and str(row[i]).strip().upper() == "CORRECTO")
+            if col_corr:
+                ws.cell(r_idx, col_corr).value = correctas
+            if col_inc:
+                ws.cell(r_idx, col_inc).value = total - correctas
+            if col_pct:
+                ws.cell(r_idx, col_pct).value = round(correctas / total, 4) if total else 0
+
     wb.save(destino)
-    print(f"  + Informe cliente generado: {destino}")
     print(f"  + Informe cliente: {destino}")
 
 
