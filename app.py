@@ -77,7 +77,7 @@ RUTA_ACUM = os.path.join(os.path.dirname(__file__), "INFORME CLIENTE", "ACUMULAD
 
 # ─── LECTURA DE DATOS ────────────────────────────────────────────
 @st.cache_data
-def leer_acumulado(_mtime=None):
+def leer_acumulado():
     if not os.path.exists(RUTA_ACUM):
         return None
     wb = openpyxl.load_workbook(RUTA_ACUM)
@@ -151,7 +151,7 @@ def procesar_datos(df):
     }
 
 # ─── INICIO ──────────────────────────────────────────────────────
-df = leer_acumulado(os.path.getmtime(RUTA_ACUM) if os.path.exists(RUTA_ACUM) else 0)
+df = leer_acumulado()
 datos = procesar_datos(df)
 
 if datos is None:
