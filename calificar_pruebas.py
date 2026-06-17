@@ -786,39 +786,12 @@ def actualizar_acumulado_wb(alumnos, wb):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def generar_informe_cliente():
-    """Copia ACUMULADO GENERAL.xlsx a INFORME CLIENTE y elimina
-    las columnas de respuesta (P01, P02, ...) dejando solo _eval."""
+    """Copia ACUMULADO GENERAL.xlsx a INFORME CLIENTE (copia exacta)."""
     if not os.path.exists(ACUMULADO):
         return
 
     destino = os.path.join(DIR_INFORME, "ACUMULADO GENERAL.xlsx")
     shutil.copy2(ACUMULADO, destino)
-
-    wb = openpyxl.load_workbook(destino)
-    _reordenar_sheets(wb)
-    for ws in wb.worksheets:
-        headers = [str(ws.cell(1, c).value or "") for c in range(1, ws.max_column + 1)]
-        p_cols = sorted([i+1 for i, h in enumerate(headers) if re.match(r'^P\d{2}$', h)], reverse=True)
-        for ci in p_cols:
-            ws.delete_cols(ci)
-        headers = [str(ws.cell(1, c).value or "") for c in range(1, ws.max_column + 1)]
-        eval_idx = [i for i, h in enumerate(headers) if re.match(r'^P\d{2}_EVAL$', h)]
-        total = len(eval_idx)
-        col_corr = next((i+1 for i, h in enumerate(headers) if h == "CORRECTAS"), None)
-        col_inc = next((i+1 for i, h in enumerate(headers) if h == "INCORRECTAS"), None)
-        col_pct = next((i+1 for i, h in enumerate(headers) if h == "PORCENTAJE ACIERTO"), None)
-        for r_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), 2):
-            if row[0] is None:
-                continue
-            correctas = sum(1 for i in eval_idx if i < len(row) and str(row[i]).strip().upper() == "CORRECTO")
-            if col_corr:
-                ws.cell(r_idx, col_corr).value = correctas
-            if col_inc:
-                ws.cell(r_idx, col_inc).value = total - correctas
-            if col_pct:
-                ws.cell(r_idx, col_pct).value = round(correctas / total, 4) if total else 0
-
-    wb.save(destino)
     print(f"  + Informe cliente: {destino}")
 
 

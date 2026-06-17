@@ -86,6 +86,7 @@ def leer_acumulado():
         ws = wb[sheet]
         headers = [str(c.value) if c.value else f"COL{i}" for i, c in enumerate(ws[1])]
         eval_cols = [i for i, h in enumerate(headers) if re.match(r'^P\d{2}_EVAL$', h)]
+        p_cols_idx = [i for i, h in enumerate(headers) if re.match(r'^P\d{2}$', h)]
         meta_nombres = ["TIPO", "NOMBRE SEDE", "CÓDIGO DANE SEDE", "NOMBRES ESTUDIANTE",
                          "CÓD. EST.", "GRADO", "CURSO", "PRUEBA"]
         meta_idx = [(i, headers.index(c)) for i, c in enumerate(meta_nombres) if c in headers]
@@ -100,6 +101,10 @@ def leer_acumulado():
                 v = row[col_i] if col_i < len(row) and row[col_i] is not None else ""
                 val = re.sub(r'\s+', ' ', str(v).strip().upper())
                 meta[meta_nombres[mi]] = val
+            for i in p_cols_idx:
+                p_name = headers[i]
+                v = row[i] if i < len(row) and row[i] is not None else ""
+                meta[p_name] = str(v).strip().upper()
             for i in eval_cols:
                 e_name = headers[i]
                 v = row[i] if i < len(row) and row[i] is not None else ""
@@ -261,9 +266,10 @@ elif nivel == "Base General":
 
     cols_base = ["TIPO", "CÓDIGO DANE SEDE", "NOMBRE SEDE", "NOMBRES ESTUDIANTE",
                   "CÓD. EST.", "GRADO", "CURSO", "PRUEBA"]
+    p_cols = sorted([c for c in DF.columns if re.match(r'^P\d{2}$', c)], key=lambda x: int(x[1:]))
     eval_cols = sorted([c for c in DF.columns if re.match(r'^P\d{2}_EVAL$', c)], key=lambda x: int(x[1:3]))
     extra = ["CORRECTAS", "INCORRECTAS", "TOTAL_EVAL", "PORCENTAJE ACIERTO"]
-    mostrar = [c for c in cols_base + eval_cols + extra if c in DF.columns]
+    mostrar = [c for c in cols_base + p_cols + eval_cols + extra if c in DF.columns]
     tabla = DF[mostrar].copy()
     st.dataframe(tabla, width="stretch", hide_index=True)
 
