@@ -141,6 +141,24 @@ def cargar_tipo_mapping():
 
 TIPO_MAPPING = cargar_tipo_mapping()
 
+def cargar_nombre_mapping():
+    """Retorna dict: cod_dane -> nombre_institucion normalizado (del Seguimiento)."""
+    mapping = {}
+    if not os.path.exists(RUTA_SEGUIMIENTO):
+        return mapping
+    wb = openpyxl.load_workbook(RUTA_SEGUIMIENTO)
+    ws = wb.active
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        cod = str(row[0]).strip() if row[0] else ""
+        nombre = str(row[4]).strip().upper() if len(row) > 4 and row[4] else ""
+        if cod and nombre:
+            mapping[cod] = nombre
+    wb.close()
+    print(f"  + Mapeo nombres de sedes cargado: {len(mapping)} instituciones")
+    return mapping
+
+NOMBRE_MAPPING = cargar_nombre_mapping()
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #  CARGAR RESPUESTAS CORRECTAS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -489,7 +507,8 @@ def procesar(ruta, resp_correctas):
         cod_dane   = str(row[e_cod_dane]).strip() if len(row) > e_cod_dane and row[e_cod_dane] else ""
         tipo       = TIPO_MAPPING.get(cod_dane, "")
         nombre_est = re.sub(r'\s+', ' ', str(row[e_estudiante]).strip().upper()) if len(row) > e_estudiante and row[e_estudiante] else "SIN NOMBRE"
-        sede       = re.sub(r'\s+', ' ', str(row[e_nom_sede]).strip().upper()) if len(row) > e_nom_sede and row[e_nom_sede] else os.path.splitext(nom)[0]
+        sede_raw   = re.sub(r'\s+', ' ', str(row[e_nom_sede]).strip().upper()) if len(row) > e_nom_sede and row[e_nom_sede] else os.path.splitext(nom)[0]
+        sede       = NOMBRE_MAPPING.get(cod_dane, sede_raw)
         cod_est    = re.sub(r'\s+', ' ', str(row[e_id]).strip().upper()) if len(row) > e_id and row[e_id] else ""
         grupo      = re.sub(r'\s+', ' ', str(row[e_grupo]).strip().upper()) if len(row) > e_grupo and row[e_grupo] else ""
 
@@ -731,8 +750,22 @@ def _append_alumnos_to_wb(wb, alumnos, total_preg):
 
         prox_fila = (ws.max_row or 0) + 1
 
+        # Build existing student keys for dedup (DANE + student + subject)
+        existing = set()
+        for r in range(2, ws.max_row + 1):
+            d = str(ws.cell(r, 2).value or '').strip()
+            e = str(ws.cell(r, 4).value or '').strip().upper()
+            p = str(ws.cell(r, 8).value or '').strip().upper()
+            existing.add((d, e, p))
+
         for al in grupo_alumnos:
             fila = prox_fila
+            mat_display = MATERIA_NOMBRES.get(al["materia"], al["materia"].upper())
+            key = (al["cod_dane"], al["estudiante"].upper(), mat_display)
+            if key in existing:
+                print(f"  [!] Duplicado omitido: {al['estudiante'][:30]} ({mat_display})")
+                continue
+            existing.add(key)
             ws.cell(fila, 1, al["tipo"]).font = ST_CELL_FONT
             ws.cell(fila, 2, al["cod_dane"]).font = ST_CELL_FONT
             ws.cell(fila, 3, al["sede"].upper()).font = ST_CELL_FONT

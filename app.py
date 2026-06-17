@@ -75,6 +75,27 @@ st.markdown('<div class="header"><h1>Proyecto Juliana</h1><p>Sistema de seguimie
 
 RUTA_ACUM = os.path.join(os.path.dirname(__file__), "INFORME CLIENTE", "ACUMULADO GENERAL.xlsx")
 
+# ─── CARGA DE MAPEO SEDES ───────────────────────────────────────
+RUTA_SEGUIMIENTO = os.path.join(os.path.dirname(__file__), "Seguimiento.xlsx")
+
+@st.cache_data
+def cargar_mapa_sedes():
+    """Retorna dict: cod_dane -> nombre_institucion normalizado."""
+    mapa = {}
+    if not os.path.exists(RUTA_SEGUIMIENTO):
+        return mapa
+    wb = openpyxl.load_workbook(RUTA_SEGUIMIENTO)
+    ws = wb.active
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        cod = str(row[0]).strip() if row[0] else ""
+        nombre = str(row[4]).strip().upper() if len(row) > 4 and row[4] else ""
+        if cod and nombre:
+            mapa[cod] = nombre
+    wb.close()
+    return mapa
+
+MAPA_SEDES = cargar_mapa_sedes()
+
 # ─── LECTURA DE DATOS ────────────────────────────────────────────
 @st.cache_data
 def leer_acumulado():
@@ -101,6 +122,10 @@ def leer_acumulado():
                 v = row[col_i] if col_i < len(row) and row[col_i] is not None else ""
                 val = re.sub(r'\s+', ' ', str(v).strip().upper())
                 meta[meta_nombres[mi]] = val
+            # Normalizar NOMBRE SEDE con el mapeo maestro
+            dane = meta.get("CÓDIGO DANE SEDE", "")
+            if dane in MAPA_SEDES:
+                meta["NOMBRE SEDE"] = MAPA_SEDES[dane]
             for i in p_cols_idx:
                 p_name = headers[i]
                 v = row[i] if i < len(row) and row[i] is not None else ""
@@ -179,23 +204,30 @@ if nivel == "Resumen":
     # ── Filters ─────────────────────────────────────────────────
     opciones_tipo = sorted(RES["TIPO"].dropna().unique().tolist())
     opciones_grado = sorted(RES["GRADO"].astype(str).unique().tolist(), key=lambda g: int(g))
+    opciones_colegio = sorted(RES["NOMBRE SEDE"].dropna().unique().tolist())
 
     if "filtro_tipo" not in st.session_state:
         st.session_state.filtro_tipo = opciones_tipo
     if "filtro_grado" not in st.session_state:
         st.session_state.filtro_grado = opciones_grado
+    if "filtro_colegio" not in st.session_state:
+        st.session_state.filtro_colegio = opciones_colegio
 
-    c1, c2 = st.columns(2)
+    c1, c2, c3 = st.columns(3)
     with c1:
         st.multiselect("TIPO", opciones_tipo, default=st.session_state.filtro_tipo,
                        key="filtro_tipo")
     with c2:
         st.multiselect("GRADO", opciones_grado, default=st.session_state.filtro_grado,
                        key="filtro_grado")
+    with c3:
+        st.multiselect("COLEGIO", opciones_colegio, default=st.session_state.filtro_colegio,
+                       key="filtro_colegio")
 
     filtros = (
         RES["TIPO"].isin(st.session_state.filtro_tipo) &
-        RES["GRADO"].astype(str).isin(st.session_state.filtro_grado)
+        RES["GRADO"].astype(str).isin(st.session_state.filtro_grado) &
+        RES["NOMBRE SEDE"].isin(st.session_state.filtro_colegio)
     )
     RES_f = RES[filtros].copy()
 
