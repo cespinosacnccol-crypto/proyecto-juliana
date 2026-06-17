@@ -382,15 +382,43 @@ def estandarizar_columnas(ws):
     # Índices de las columnas estándar detectadas
     idx_std = {col.get(k) for k in orden_claves if col.get(k) is not None}
 
+    # ── Detectar y excluir columnas no-respuesta (contador N°, Est., Pág, etc.) ──
+    _COUNTER_HEADERS = {"n°", "nº", "#", "no.", "no", "numero", "num",
+                        "consecutivo", "item", "ítem", "n.", "n", "consec",
+                        "id_col", "est.", "est", "pág", "pag", "nro", "orden"}
+
+    def _es_contador(orig_i, header):
+        """True si la columna parece un contador (valores secuenciales 1,2,3...)."""
+        h = norm(header)
+        if h in _COUNTER_HEADERS:
+            return True
+        # Revisar datos: si los primeros valores son enteros secuenciales
+        muestras = []
+        for row in ws.iter_rows(min_row=2, max_row=5, values_only=True):
+            if orig_i < len(row) and row[orig_i] is not None:
+                s = str(row[orig_i]).strip()
+                if s.isdigit():
+                    muestras.append(int(s))
+        if len(muestras) >= 3:
+            if muestras == list(range(muestras[0], muestras[0] + len(muestras))):
+                return True
+        return False
+
+    extra_idx_limpio = []
+    for orig_i in range(len(headers_raw)):
+        if orig_i not in idx_std:
+            if _es_contador(orig_i, headers_raw[orig_i]):
+                continue
+            extra_idx_limpio.append(orig_i)
+
     # ── Encabezados ──
     for i, (nombre, _) in enumerate(COLUMNAS_ESTANDAR, 1):
         ws_out.cell(1, i, nombre)
 
     out_col = total_meta + 1
-    for orig_i, h in enumerate(headers_raw):
-        if orig_i not in idx_std:
-            ws_out.cell(1, out_col, h)
-            out_col += 1
+    for orig_i in extra_idx_limpio:
+        ws_out.cell(1, out_col, headers_raw[orig_i])
+        out_col += 1
 
     # ── Datos ──
     for fila_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), 2):
@@ -403,10 +431,10 @@ def estandarizar_columnas(ws):
             if src is not None and src < len(row):
                 ws_out.cell(fila_idx, c_idx, row[src])
 
-        # Columnas no estándar, en orden original
+        # Columnas no estándar (excluyendo contadores), en orden original
         out_col = total_meta + 1
-        for orig_i in range(len(row)):
-            if orig_i not in idx_std:
+        for orig_i in extra_idx_limpio:
+            if orig_i < len(row):
                 ws_out.cell(fila_idx, out_col, row[orig_i])
                 out_col += 1
 
@@ -678,6 +706,7 @@ def _append_alumnos_to_wb(wb, alumnos, total_preg):
                   "CÓD. EST.", "GRADO", "CURSO", "PRUEBA"]
     cols_preg = []
     for q in range(1, total_preg + 1):
+        cols_preg.append(f"P{q:02d}")
         cols_preg.append(f"P{q:02d}_EVAL")
     cols_sum = ["CORRECTAS", "INCORRECTAS", "TOTAL_EVAL", "PORCENTAJE ACIERTO"]
     todos_cols = cols_meta + cols_preg + cols_sum
@@ -695,8 +724,8 @@ def _append_alumnos_to_wb(wb, alumnos, total_preg):
             ancho_columnas(ws, todos_cols)
             ws.freeze_panes = "A2"
 
-        col_ini_eval = len(cols_meta) + 1
-        col_fin_eval = len(cols_meta) + total_preg
+        col_ini_eval = len(cols_meta) + 2
+        col_fin_eval = len(cols_meta) + total_preg * 2
         letra_ini = get_column_letter(col_ini_eval)
         letra_fin = get_column_letter(col_fin_eval)
 
@@ -719,7 +748,12 @@ def _append_alumnos_to_wb(wb, alumnos, total_preg):
                 ws.cell(fila, c).border = ST_BORDER
 
             for q, det in enumerate(al["detalles"]):
-                col_eval = len(cols_meta) + 1 + q
+                col_resp = len(cols_meta) + 1 + q * 2
+                col_eval = col_resp + 1
+                c_resp = ws.cell(fila, col_resp, det["resp"])
+                c_resp.font = ST_CELL_FONT
+                c_resp.alignment = ST_CELL_ALIGN
+                c_resp.border = ST_BORDER
                 colorear_eval(ws.cell(fila, col_eval), "CORRECTO" if det["ok"] else "INCORRECTO")
 
             col_corr = len(todos_cols) - 3
