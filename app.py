@@ -204,30 +204,23 @@ if nivel == "Resumen":
     # ── Filters ─────────────────────────────────────────────────
     opciones_tipo = sorted(RES["TIPO"].dropna().unique().tolist())
     opciones_grado = sorted(RES["GRADO"].astype(str).unique().tolist(), key=lambda g: int(g))
-    opciones_colegio = sorted(RES["NOMBRE SEDE"].dropna().unique().tolist())
 
     if "filtro_tipo" not in st.session_state:
         st.session_state.filtro_tipo = opciones_tipo
     if "filtro_grado" not in st.session_state:
         st.session_state.filtro_grado = opciones_grado
-    if "filtro_colegio" not in st.session_state:
-        st.session_state.filtro_colegio = opciones_colegio
 
-    c1, c2, c3 = st.columns(3)
+    c1, c2 = st.columns(2)
     with c1:
         st.multiselect("TIPO", opciones_tipo, default=st.session_state.filtro_tipo,
                        key="filtro_tipo")
     with c2:
         st.multiselect("GRADO", opciones_grado, default=st.session_state.filtro_grado,
                        key="filtro_grado")
-    with c3:
-        st.multiselect("COLEGIO", opciones_colegio, default=st.session_state.filtro_colegio,
-                       key="filtro_colegio")
 
     filtros = (
         RES["TIPO"].isin(st.session_state.filtro_tipo) &
-        RES["GRADO"].astype(str).isin(st.session_state.filtro_grado) &
-        RES["NOMBRE SEDE"].isin(st.session_state.filtro_colegio)
+        RES["GRADO"].astype(str).isin(st.session_state.filtro_grado)
     )
     RES_f = RES[filtros].copy()
 
