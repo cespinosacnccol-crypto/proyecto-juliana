@@ -564,7 +564,10 @@ def procesar(ruta, resp_correctas):
             num_p = i + 1
             r_est = resp_est[i] if i < len(resp_est) else ""
             r_cor = correctas_dict.get(num_p, "")
-            ok = (r_est == r_cor and r_est != "")
+            if r_est and " O " in r_cor:
+                ok = r_est in [x.strip() for x in r_cor.split(" O ")]
+            else:
+                ok = (r_est == r_cor and r_est != "")
             if ok: num_ok += 1
             detalles.append({"resp": r_est, "correcta": r_cor, "ok": ok})
 
