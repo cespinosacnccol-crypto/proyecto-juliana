@@ -173,7 +173,7 @@ def procesar_datos(df):
         lambda r: round(r["incorrectas"] / r["estudiantes"], 1) if r["estudiantes"] > 0 else 0, axis=1
     )
     resumen["_GRADO_NUM"] = pd.to_numeric(resumen["GRADO"], errors="coerce")
-    resumen = resumen.sort_values(["CÓDIGO DANE SEDE", "_GRADO_NUM", "PRUEBA"]).reset_index(drop=True).drop(columns=["_GRADO_NUM"])
+    resumen = resumen.sort_values(["NOMBRE SEDE", "_GRADO_NUM", "PRUEBA"]).reset_index(drop=True).drop(columns=["_GRADO_NUM"])
 
     return {
         "df": df,
